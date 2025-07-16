@@ -159,7 +159,11 @@ Item {
         // Collect model data into a JS array
         let rows = [];
         for (i = 0; i < tableModel.count; i++) {
-            rows.push(tableModel.get(i));
+            rows.push({
+                date: tableModel.get(i).date,
+                amount: tableModel.get(i).amount,
+                category: tableModel.get(i).category
+            });
         }
 
         // Sort the array
