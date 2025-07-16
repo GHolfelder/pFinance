@@ -62,7 +62,7 @@ Item {
                 color: "transparent"
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: sortBy("date")
+                    onClicked: sortBy("date", "d")
                 }
                 Text {
                     text: "Date" + (sortField === "date" ? (sortAscending ? " ▲" : " ▼") : "")
@@ -78,7 +78,7 @@ Item {
                 color: "transparent"
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: sortBy("amount")
+                    onClicked: sortBy("amount", "f")
                 }
                 Text {
                     text: "Amount" + (sortField === "amount" ? (sortAscending ? " ▲" : " ▼") : "")
@@ -146,7 +146,13 @@ Item {
         id: tableModel
     }
 
-    function sortBy(field) {
+    /*
+     * Sort requested field
+     *
+     * @param field Name of field to be sorted
+     * @param type Optional data conversion, 'd'=by date, 'f'=by amount, 'i'=by integer
+     */
+    function sortBy(field, type) {
         var i;
 
         if (sortField === field) {
@@ -171,10 +177,20 @@ Item {
             let va = a[field];
             let vb = b[field];
 
-            // Handle date parsing if field is 'date'
-            if (field === "date") {
+            // Convert data prior to doing comparison
+            switch (type) {
+            case 'd':
                 va = new Date(va);
                 vb = new Date(vb);
+                break;
+            case 'f':
+                va = parseFloat(va.replace(/[^\d.-]/g, ''));
+                vb = parseFloat(vb.replace(/[^\d.-]/g, ''));
+                break;
+            case 'i':
+                va = parseInt(va.replace(/[^\d-]/g, ''));
+                vb = parseInt(vb.replace(/[^\d-]/g, ''));
+                break;
             }
 
             return sortAscending ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
