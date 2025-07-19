@@ -10,7 +10,7 @@
  * @param parent Reference to parent class.
  */
 DatabaseManager::DatabaseManager(QObject *parent) : QObject(parent) {
-
+    setObjectName("DatabaseManager");
 }
 
 /**
@@ -22,7 +22,6 @@ DatabaseManager::DatabaseManager(QObject *parent) : QObject(parent) {
  * @return True if successful, otherwise false
  */
 bool DatabaseManager::connect() {
-    QString error;
     QSettings settings("config.ini", QSettings::IniFormat);
 
     // Retrieve settings
@@ -37,21 +36,18 @@ bool DatabaseManager::connect() {
     settings.endGroup();
 
     // Add a new database connection
-    db = QSqlDatabase::addDatabase("QPSQL");
-    db.setHostName(host);
-    db.setPort(port);
-    db.setDatabaseName(dbname);
-    db.setUserName(username);
-    db.setPassword(password);
+    m_db = QSqlDatabase::addDatabase("QPSQL");
+    m_db.setHostName(host);
+    m_db.setPort(port);
+    m_db.setDatabaseName(dbname);
+    m_db.setUserName(username);
+    m_db.setPassword(password);
 
     // Open connection
-    if (!db.open()) {
-        error = "Connection failed: " + db.lastError().text();
-        emit initializationFailed(error);
-        qCritical() << error;
-        return false;
-    }
-    return true;
+    if (!m_db.open())
+        return fail("Connection failed: " + m_db.lastError().text());
+
+    return success("Connection successful");
 }
 
 /**
@@ -66,26 +62,16 @@ bool DatabaseManager::connect() {
  */
 bool DatabaseManager::initializeSchema() {
     QSqlQuery query;
-    QString error;
 
     // Enable extension
-    if (!query.exec("CREATE EXTENSION IF NOT EXISTS pgcrypto")) {
-        error = "Extension init failed: " + query.lastError().text();
-        emit initializationFailed(error);
-        qCritical() << error;
-        return false;
-    }
+    if (!query.exec("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
+        return fail("Extension init failed: " + query.lastError().text());
 
-    // Vendors table
-    if (!initializeVendor()) {
-        return false;
-    }
+    // Initialize tables
+    if (!initializeVendor())    return false;
 
     // Finish up
-    error = "Database schema initialized.";
-    emit initializationSuccess(error);
-    qDebug() << error;
-    return true;
+    return success("Database schema initialized.");
 }
 
 /**
@@ -93,10 +79,8 @@ bool DatabaseManager::initializeSchema() {
  *
  * @return True if successful, otherwise false
  */
-bool DatabaseManager::initializeVendor()
-{
+bool DatabaseManager::initializeVendor() {
     QSqlQuery query;
-    QString error;
 
     const QString vendorTable = R"(
         CREATE TABLE IF NOT EXISTS vendors (
@@ -112,21 +96,63 @@ bool DatabaseManager::initializeVendor()
         )
     )";
 
-    if (!query.exec(vendorTable)) {
-        error = "Vendor table init failed: " + query.lastError().text();
-        emit initializationFailed(error);
-        qCritical() << error;
-        return false;
-    }
+    if (!query.exec(vendorTable))
+        return fail("Vendor table init failed: " + query.lastError().text());
 
     return true;
 }
 
 /**
- * @brief Get the internal QSqlDatabase object stored in the private member db.
+ * @brief Get the internal QSqlDatabase object stored in the private member m_db.
  *
  * @return QSqlDatabase object
  */
 QSqlDatabase DatabaseManager::database() const {
-    return db;
+    return m_db;
 }
+
+/**
+ * @brief Get text of last error generated
+ *
+ * @return QSqlDatabase object
+ */
+QString DatabaseManager::error() const {
+    return m_error;
+}
+
+/**
+ * @brief Failed operation return.
+ *
+ * This saves any error that has occurred, logs the error
+ * for debug purposes and emits an operation failed signal.
+ *
+ * A false is always returned.
+ *
+ * @param error Message indicating error that has occurred
+ * @return false
+ */
+bool DatabaseManager::fail(QString error) {
+    m_error = error;
+    qDebug() << error;
+    emit operationFailed(m_error);
+    return false;
+}
+
+/**
+ * @brief Successgful operation return
+ *
+ * This clears the current error message and logs
+ * the informational message.
+ *
+ * A true is always returned.
+ *
+ * @param error Message to be emitted with successful operation
+ * @return true
+ */
+bool DatabaseManager::success(QString message) {
+    m_error = "";
+    qInfo() << message;
+    emit operationSuccess(message);
+    return true;
+}
+

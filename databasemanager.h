@@ -6,6 +6,9 @@
 
 class DatabaseManager : public QObject {
     Q_OBJECT
+    QSqlDatabase m_db;              // Database object
+    QString m_error;                // Last error encountered
+
 public:
     explicit DatabaseManager(QObject *parent = nullptr);
 
@@ -13,15 +16,17 @@ public:
     bool initializeSchema();
 
     QSqlDatabase database() const;
+    QString error() const;
 
 signals:
-    void initializationSuccess(const QString &message);
-    void initializationFailed(const QString &error);
+    void operationSuccess(const QString &message);
+    void operationFailed(const QString &error);
 
 private:
     bool initializeVendor();
 
-    QSqlDatabase db;
+    bool fail(QString error);
+    bool success(QString message);
 };
 
 #endif // DATABASEMANAGER_H

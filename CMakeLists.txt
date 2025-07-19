@@ -11,6 +11,9 @@ qt_standard_project_setup(REQUIRES 6.8)
 qt_add_executable(apppFinance
     main.cpp
     databasemanager.h databasemanager.cpp
+    dataregistry.h dataregistry.cpp
+    accessbase.h accessbase.cpp
+    vendoraccess.h vendoraccess.cpp
 )
 
 qt_add_qml_module(apppFinance
