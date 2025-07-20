@@ -8,77 +8,49 @@ Item {
     height: parent.height
 
     property var model
-    property int selectedIndex: -1
 
-    signal rowSelected(int index)
-    onRowSelected: function(index) {
-        selectedIndex = index;
-        console.log(selectedIndex);
+    HorizontalHeaderView {
+        id: horizontalHeader
+        anchors.left: table.left
+        anchors.top: parent.top
+        syncView: table
+        clip: true
+        z: 10
     }
 
-    ColumnLayout {
-        anchors.fill: parent
-        spacing: 0
+    VerticalHeaderView {
+        id: verticalHeader
+        anchors.top: table.top
+        anchors.left: parent.left
+        syncView: table
+        clip: true
+        z: 10
+    }
 
-        // 🔹 Toolbar
-        Rectangle {
-            Layout.fillWidth: true
-            height: 50
-            color: "#f0f0f0"
-            border.color: "#cccccc"
+    // 🔹 TableView
+    TableView {
+        id: table
+        model: dataTable.model
 
-            Row {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.leftMargin: 10
-                spacing: 10
+        anchors.left: verticalHeader.right
+        anchors.top: horizontalHeader.bottom
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
 
-                Button { text: "➕ Add" }
-                Button { text: "✏️ Update" }
-                Button {
-                    text: "🗑️ Delete"
-                    enabled: selectedIndex >= 0
-                }
-            }
-        }
+        columnSpacing: 1
+        rowSpacing: 1
+        z: 5
+        boundsBehavior: Flickable.StopAtBounds
 
-        // 🔹 TableView
-        TableView {
-            id: table
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            model: dataTable.model
-            clip: true
-            columnSpacing: 2
-            rowSpacing: 2
+        delegate:  Label {
+            text: model.tabledata
+            width: 100
+            padding: 12
 
-            selectionModel: ItemSelectionModel {
-                model: dataTable.model
-            }
-
-            delegate: Rectangle {
-                id: rowRect
-                implicitHeight: 40
-                implicitWidth: 350
-                border.color: "#dddddd"
-                color: selected ? "#d0eaff" : "#ffffff"
-
-                required property bool selected
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: tableView.selectionModel.select(tableView.model.index(index, 0), ItemSelectionModel.Select)
-                }
-
-                Row {
-                    anchors.fill: parent
-                    anchors.margins: 5
-                    spacing: 10
-
-                    Text { text: name;      width: 100 }
-                    Text { text: address1;  width: 100 }
-                    Text { text: city;      width: 150 }
-                }
+            Rectangle {
+                anchors.fill: parent
+                color: "#efefef"
+                z: -1
             }
         }
     }
