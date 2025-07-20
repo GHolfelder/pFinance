@@ -1,9 +1,11 @@
 #include "databasemanager.h"
 #include "dataregistry.h"
 #include "vendoraccess.h"
+#include "vendormodel.h"
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 
 int main(int argc, char *argv[])
 {
@@ -31,10 +33,19 @@ int main(int argc, char *argv[])
     if (vendor->count() == 0)
         vendor->generateSample(20);
     else
-        qDebug() << "Vendors" << vendor->count();
+        qDebug() << "Vendor count:" << vendor->count();
 #endif
 
+    // Load list of vendors
+    VendorModel *vendorModel = new VendorModel(&app);
+    vendorModel->loadFromDatabase(dbManager.database());
+    qDebug() << "Vendors loaded: " << vendorModel->rowCount();
+
+    // Set context property in QML
+    engine.rootContext()->setContextProperty("vendorModel", vendorModel);
+
     // Load main application window
+    engine.addImportPath("qml");
     engine.loadFromModule("pFinance", "Main");
 
     return app.exec();

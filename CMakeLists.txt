@@ -1,47 +1,74 @@
 cmake_minimum_required(VERSION 3.16)
+project(pFinance LANGUAGES CXX)
 
-project(pFinance VERSION 0.1 LANGUAGES CXX)
+# ✅ Enable Qt's MOC system for QObject/meta-types
+set(CMAKE_AUTOMOC ON)
 
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-find_package(Qt6 REQUIRED COMPONENTS Core Sql Quick)
-
-qt_standard_project_setup(REQUIRES 6.8)
-
-qt_add_executable(apppFinance
-    main.cpp
-    databasemanager.h databasemanager.cpp
-    dataregistry.h dataregistry.cpp
-    accessbase.h accessbase.cpp
-    vendoraccess.h vendoraccess.cpp
+# ✅ Find required Qt 6 modules
+find_package(Qt6 REQUIRED COMPONENTS
+    Core
+    Gui
+    Qml
+    Quick
+    QuickControls2
+    Sql
 )
 
-qt_add_qml_module(apppFinance
-    URI pFinance
-    VERSION 1.0
-    QML_FILES
-        Main.qml        
-        QML_FILES DataTable.qml
+# ✅ Define your main executable and link sources
+add_executable(${PROJECT_NAME}
+    src/main.cpp
+    src/accessbase.cpp
+    src/databasemanager.cpp
+    src/dataregistry.cpp
+    src/vendoraccess.cpp
+    src/vendormodel.cpp
 )
 
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
-set_target_properties(apppFinance PROPERTIES
-#    MACOSX_BUNDLE_GUI_IDENTIFIER com.example.apppFinance
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
+# Optional: Group headers for IDE visibility
+target_sources(${PROJECT_NAME}
+    PRIVATE
+    src/accessbase.h
+    src/databasemanager.h
+    src/dataregistry.h
+    src/vendoraccess.h
+    src/vendormodel.h
 )
 
-target_link_libraries(apppFinance
-    PRIVATE Qt6::Core Qt6::Sql Qt6::Quick
+# ✅ Include source directory for headers
+target_include_directories(${PROJECT_NAME}
+    PRIVATE ${CMAKE_SOURCE_DIR}/src
 )
 
-include(GNUInstallDirs)
-install(TARGETS apppFinance
-    BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+# ✅ Link Qt libraries
+target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Qml
+    Qt6::Quick
+    Qt6::QuickControls2
+    Qt6::Sql
 )
+
+# ✅ Set C++ standard
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+
+# ✅ Define your QML import path (where qmldir and Main.qml reside)
+set(QML_DIR "${CMAKE_SOURCE_DIR}/qml/pFinance")
+set_property(TARGET ${PROJECT_NAME} PROPERTY QT_QML_IMPORT_PATH "${QML_DIR}")
+
+
+# ✅ Copy QML files to runtime folder
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/qml/pFinance)
+
+file(GLOB_RECURSE QML_FILES
+    "${CMAKE_SOURCE_DIR}/qml/pFinance/*.qml"
+)
+
+foreach(file IN LISTS QML_FILES)
+    file(RELATIVE_PATH relPath "${CMAKE_SOURCE_DIR}/qml/pFinance" "${file}")
+    configure_file(${file} "${CMAKE_BINARY_DIR}/qml/pFinance/${relPath}" COPYONLY)
+endforeach()
+
+# ✅ Copy qmldir file for runtime loading
+configure_file(${QML_DIR}/qmldir ${CMAKE_BINARY_DIR}/qml/pFinance/qmldir COPYONLY)
