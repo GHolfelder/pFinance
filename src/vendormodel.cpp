@@ -14,7 +14,7 @@ const QStringList VendorModel::COLUMN_TITLES = {
     "State",
     "Postal Code",
     "Phone",
-    "Unpaid Balance"
+    "Unpaid\nBalance"
 };
 const QStringList VendorModel::COLUMN_NAMES = {
     "id",
@@ -29,7 +29,8 @@ const QStringList VendorModel::COLUMN_NAMES = {
 };
 
 
-VendorModel::VendorModel(QObject *parent) : QAbstractTableModel(parent) {
+VendorModel::VendorModel(QSqlDatabase db, QObject *parent) : QAbstractTableModel(parent) {
+    m_db = db;
     setObjectName("VendorModel");
 }
 
@@ -47,6 +48,8 @@ QVariant VendorModel::data(const QModelIndex &index, int role) const {
     switch (role) {
     case CellDataRole:
         return m_vendors.at(index.row()).at(index.column());
+    case CellNameRole:
+        return COLUMN_NAMES.at(index.column());
     case RowRole:
         return index.row();
     case ColumnRole:
@@ -68,6 +71,10 @@ QVariant VendorModel::headerData(int section, Qt::Orientation orientation, int r
             return QVariant::fromValue(section + 1);
         }
     }
+    case CellNameRole:
+        return COLUMN_NAMES.at(section);
+    case ColumnRole:
+        return section;
     default:                break;
     }
 
@@ -78,6 +85,7 @@ QHash<int, QByteArray> VendorModel::roleNames() const {
     QHash<int, QByteArray> roles;
     roles[Qt::DisplayRole] = "display";
     roles[CellDataRole] = "celldata";
+    roles[CellNameRole] = "cellname";
     roles[RowRole] = "row";
     roles[ColumnRole] = "column";
     return roles;
@@ -87,12 +95,27 @@ QVariant VendorModel::get_display_data(const QModelIndex &index) {
     return data(index, VendorModel::CellDataRole);
 }
 
-void VendorModel::loadFromDatabase(QSqlDatabase db) {
+void VendorModel::sortBy(const QString columnName) {
+    // Toggle sort order if same column selected
+    if (columnName == m_sortColumn)
+        m_sortOrder = (m_sortOrder == Qt::AscendingOrder) ? Qt::DescendingOrder : Qt::AscendingOrder;
+    else
+        m_sortOrder = Qt::AscendingOrder;
+    m_sortColumn = columnName;
+
+    // Notify interface that order has change
+    emit sortColumnChanged();
+    emit sortOrderChanged();
+
+    // Load/Reload the data
     beginResetModel();
     m_vendors.clear();
 
-    QSqlQuery query(db);
-    query.prepare("SELECT " + COLUMN_NAMES.join(", ") + " FROM vendors ORDER BY name ASC");
+    QSqlQuery query(m_db);
+    QString select = QString("SELECT " + COLUMN_NAMES.join(", ") + " FROM vendors ORDER BY %1 %2")
+        .arg(m_sortColumn)
+        .arg(m_sortOrder == Qt::AscendingOrder ? "ASC" : "DESC");
+    query.prepare(select);
 
     if (!query.exec()) {
         qWarning() << "Failed to load vendors:" << query.lastError().text();
@@ -108,4 +131,12 @@ void VendorModel::loadFromDatabase(QSqlDatabase db) {
         m_vendors.append(v);
     }
     endResetModel();
+}
+
+Qt::SortOrder VendorModel::sortOrder() {
+    return m_sortOrder;
+}
+
+QString VendorModel::sortColumn() {
+    return m_sortColumn;
 }

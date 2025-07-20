@@ -39,8 +39,8 @@ int main(int argc, char *argv[])
 #endif
 
     // Load list of vendors
-    VendorModel *vendorModel = new VendorModel(&app);
-    vendorModel->loadFromDatabase(dbManager.database());
+    VendorModel *vendorModel = new VendorModel(dbManager.database(), &app);
+    vendorModel->sortBy("name");
     qDebug() << "Vendors loaded: " << vendorModel->rowCount();
 
     // Set context property in QML

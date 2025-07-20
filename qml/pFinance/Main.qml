@@ -12,5 +12,10 @@ ApplicationWindow {
     DataTable {
         anchors.fill: parent
         model: vendorModel
+        sortOrder: vendorModel.sortOrder
+        sortColumn: vendorModel.sortColumn
+        onSortRequested: (columnName) => {
+            vendorModel.sortBy(columnName);
+        }
     }
 }

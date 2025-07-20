@@ -9,8 +9,11 @@ Item {
 
     // Custom properties
     property var model                      // Passed in model
+    property int sortOrder                  // Current sort order (ascending / descending)
+    property string sortColumn              // Current sort column
     property int selectedRow: -1            // Selected row in grid
     property int minimumColumnWidth: 90     // Minimum column wodth
+    signal sortRequested(var columnName)    // Signal emitted when a column header is clicked
 
     // Action toolbar
     Rectangle {
@@ -64,12 +67,33 @@ Item {
             implicitHeight: 40
             color: "#dddddd"
 
-            Text {
-                id: textItem
-                text: model.display
+            Row {
                 anchors.centerIn: parent
-                elide: Text.ElideRight
-                clip: true
+                spacing: 4
+
+                Text {
+                    visible: sortColumn === textItem.columnName
+                    text: sortOrder === 0 ? "▲" : "▼"
+                    font.pixelSize: 12
+                    horizontalAlignment: Text.AlignHCenter
+                    color: "#555"
+                    anchors.verticalCenter: textItem.verticalCenter
+                }
+                Text {
+                    id: textItem
+                    text: model.display
+                    font.bold: true
+                    wrapMode: Text.WordWrap
+                    maximumLineCount: 2
+                    horizontalAlignment: Text.AlignHCenter
+                    property int columnIndex: model.column   // Save column index
+                    property var columnName: model.cellname  // Save column name
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: sortRequested(textItem.columnName);
             }
         }
     }
