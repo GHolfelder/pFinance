@@ -21,7 +21,9 @@ public:
     void loadFromDatabase(QSqlDatabase db);
 
     enum TableRoles {                       // Used to setup custom roles if the built-in roles are inadequate
-        TableDataRole = Qt::UserRole + 1,
+        CellDataRole = Qt::UserRole + 1,
+        RowRole,
+        ColumnRole
     };
 
     Q_INVOKABLE QVariant get_display_data(const QModelIndex& index);

@@ -45,8 +45,12 @@ int VendorModel::columnCount(const QModelIndex &parent) const {
 
 QVariant VendorModel::data(const QModelIndex &index, int role) const {
     switch (role) {
-    case TableDataRole:
+    case CellDataRole:
         return m_vendors.at(index.row()).at(index.column());
+    case RowRole:
+        return index.row();
+    case ColumnRole:
+        return index.column();
     default:
         break;
     }
@@ -73,13 +77,14 @@ QVariant VendorModel::headerData(int section, Qt::Orientation orientation, int r
 QHash<int, QByteArray> VendorModel::roleNames() const {
     QHash<int, QByteArray> roles;
     roles[Qt::DisplayRole] = "display";
-    roles[TableDataRole] = "tabledata";
-    //roles[SomeOtherRole] = "someotherrole"; // You can set up multiple mappings if needed
+    roles[CellDataRole] = "celldata";
+    roles[RowRole] = "row";
+    roles[ColumnRole] = "column";
     return roles;
 }
 
 QVariant VendorModel::get_display_data(const QModelIndex &index) {
-    return data(index, VendorModel::TableDataRole);
+    return data(index, VendorModel::CellDataRole);
 }
 
 void VendorModel::loadFromDatabase(QSqlDatabase db) {
