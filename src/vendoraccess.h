@@ -6,9 +6,9 @@
 #include <QSqlDatabase>
 #include <QVariantMap>
 
-class VendorAccess : public AccessBase
-{
+class VendorAccess : public AccessBase {
     Q_OBJECT
+
 public:
     explicit VendorAccess(QSqlDatabase db, QObject *parent = nullptr);
 

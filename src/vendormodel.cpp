@@ -28,26 +28,29 @@ const QStringList VendorModel::COLUMN_NAMES = {
     "unpaid_balance"
 };
 
-
-VendorModel::VendorModel(QSqlDatabase db, QObject *parent) : QAbstractTableModel(parent) {
-    m_db = db;
+/**
+ * @brief Vendor model constructor
+ *
+ * @param db Database object where connection has been made
+ * @param columnNames List of column names in model
+ * @param columnTitles List of column titles for display
+ * @param parent Reference to parent class.
+ */
+VendorModel::VendorModel(QSqlDatabase db, QObject *parent) : ModelBase(db, COLUMN_NAMES, COLUMN_TITLES, parent) {
     setObjectName("VendorModel");
 }
 
-int VendorModel::rowCount(const QModelIndex &parent) const {
-    Q_UNUSED(parent)
-    return m_vendors.size();
-}
-
-int VendorModel::columnCount(const QModelIndex &parent) const {
-    Q_UNUSED(parent)
-    return COLUMN_NAMES.size();
-}
-
+/**
+ * @brief Retrieve the vendor data for the display
+ *
+ * @param index Row and column requested
+ * @param role Type of data to be retrieved
+ * @returns Requested data or an empty QVariant
+ */
 QVariant VendorModel::data(const QModelIndex &index, int role) const {
     switch (role) {
     case CellDataRole:
-        return m_vendors.at(index.row()).at(index.column());
+        return m_data.at(index.row()).at(index.column());
     case CellNameRole:
         return COLUMN_NAMES.at(index.column());
     case RowRole:
@@ -61,6 +64,13 @@ QVariant VendorModel::data(const QModelIndex &index, int role) const {
     return QVariant();
 }
 
+/**
+ * @brief Retrieve the vendor header data (column titles) for the display
+ *
+ * @param index Row and column requested
+ * @param role Type of data to be retrieved
+ * @returns Requested data or an empty QVariant
+ */
 QVariant VendorModel::headerData(int section, Qt::Orientation orientation, int role) const {
     switch (role) {
     case Qt::DisplayRole:
@@ -81,6 +91,14 @@ QVariant VendorModel::headerData(int section, Qt::Orientation orientation, int r
     return QVariant();
 }
 
+/**
+ * @brief Return the hash table of roles
+ *
+ * The hash table maps the various roles for data and header
+ * data retrieval to a symbol.
+ *
+ * @returns Hash table of roles
+ */
 QHash<int, QByteArray> VendorModel::roleNames() const {
     QHash<int, QByteArray> roles;
     roles[Qt::DisplayRole] = "display";
@@ -91,30 +109,22 @@ QHash<int, QByteArray> VendorModel::roleNames() const {
     return roles;
 }
 
-QVariant VendorModel::get_display_data(const QModelIndex &index) {
-    return data(index, VendorModel::CellDataRole);
-}
-
+/**
+ * @brief Reload the model in the requested order
+ *
+ * @param columnName Column on which data is to be sorder
+ */
 void VendorModel::sortBy(const QString columnName) {
-    // Toggle sort order if same column selected
-    if (columnName == m_sortColumn)
-        m_sortOrder = (m_sortOrder == Qt::AscendingOrder) ? Qt::DescendingOrder : Qt::AscendingOrder;
-    else
-        m_sortOrder = Qt::AscendingOrder;
-    m_sortColumn = columnName;
-
-    // Notify interface that order has change
-    emit sortColumnChanged();
-    emit sortOrderChanged();
+    setSort(columnName);
 
     // Load/Reload the data
     beginResetModel();
-    m_vendors.clear();
+    m_data.clear();
 
     QSqlQuery query(m_db);
     QString select = QString("SELECT " + COLUMN_NAMES.join(", ") + " FROM vendors ORDER BY %1 %2")
-        .arg(m_sortColumn)
-        .arg(m_sortOrder == Qt::AscendingOrder ? "ASC" : "DESC");
+        .arg(sortColumn())
+        .arg(sortOrder() == Qt::AscendingOrder ? "ASC" : "DESC");
     query.prepare(select);
 
     if (!query.exec()) {
@@ -128,15 +138,7 @@ void VendorModel::sortBy(const QString columnName) {
         for (const QString &name : COLUMN_NAMES) {
             v << query.value(name).toString();
         }
-        m_vendors.append(v);
+        m_data.append(v);
     }
     endResetModel();
-}
-
-Qt::SortOrder VendorModel::sortOrder() {
-    return m_sortOrder;
-}
-
-QString VendorModel::sortColumn() {
-    return m_sortColumn;
 }

@@ -13,6 +13,7 @@ find_package(Qt6 REQUIRED COMPONENTS
     QuickControls2
     Sql
 )
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
 # ✅ Define your main executable and link sources
 add_executable(${PROJECT_NAME}
@@ -22,8 +23,11 @@ add_executable(${PROJECT_NAME}
     src/dataregistry.cpp
     src/vendoraccess.cpp
     src/vendormodel.cpp
+    src/modelbase.h src/modelbase.cpp
 )
 
+
+target_link_libraries(pFinance PRIVATE Qt6::Core)
 # Optional: Group headers for IDE visibility
 target_sources(${PROJECT_NAME}
     PRIVATE

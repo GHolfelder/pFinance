@@ -12,7 +12,7 @@ Item {
     property int sortOrder                  // Current sort order (ascending / descending)
     property string sortColumn              // Current sort column
     property int selectedRow: -1            // Selected row in grid
-    property int minimumColumnWidth: 90     // Minimum column wodth
+    property int minimumColumnWidth: 80     // Minimum column wodth
     signal sortRequested(var columnName)    // Signal emitted when a column header is clicked
 
     // Action toolbar
@@ -39,7 +39,7 @@ Item {
             Button {
                 text: "✏️ Change"
                 width: 150
-                enabled: selectedRow > 0
+                enabled: selectedRow >= 0
                 onClicked: {
                     console.log("Change row")
                 }
@@ -47,7 +47,7 @@ Item {
             Button {
                 text: "🗑️ Delete"
                 width: 150
-                enabled: selectedRow > 0
+                enabled: selectedRow >= 0
                 onClicked: {
                     console.log("Delete row")
                 }
