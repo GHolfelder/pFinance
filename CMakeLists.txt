@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 project(pFinance LANGUAGES CXX)
 
-# ✅ Enable Qt's MOC system for QObject/meta-types
-set(CMAKE_AUTOMOC ON)
+# ✅ Qt recommended setup macro
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/QtSetup.cmake OPTIONAL)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/QmlModuleHelpers.cmake OPTIONAL)
 
-# ✅ Find required Qt 6 modules
+# ✅ Enable Qt features
 find_package(Qt6 REQUIRED COMPONENTS
     Core
     Gui
@@ -13,39 +14,37 @@ find_package(Qt6 REQUIRED COMPONENTS
     QuickControls2
     Sql
 )
-find_package(Qt6 REQUIRED COMPONENTS Core)
 
-# ✅ Define your main executable and link sources
-add_executable(${PROJECT_NAME}
+qt_standard_project_setup()
+
+# ✅ Define sources
+set(SOURCES
     src/main.cpp
     src/accessbase.cpp
     src/databasemanager.cpp
     src/dataregistry.cpp
     src/vendoraccess.cpp
     src/vendormodel.cpp
-    src/modelbase.h src/modelbase.cpp
+    src/modelbase.cpp
 )
 
-
-target_link_libraries(pFinance PRIVATE Qt6::Core)
-# Optional: Group headers for IDE visibility
-target_sources(${PROJECT_NAME}
-    PRIVATE
+set(HEADERS
     src/accessbase.h
     src/databasemanager.h
     src/dataregistry.h
     src/vendoraccess.h
     src/vendormodel.h
+    src/modelbase.h
 )
 
-# ✅ Include source directory for headers
-target_include_directories(${PROJECT_NAME}
-    PRIVATE ${CMAKE_SOURCE_DIR}/src
+# ✅ Add main executable
+qt_add_executable(${PROJECT_NAME}
+    ${SOURCES}
+    ${HEADERS}
 )
 
-# ✅ Link Qt libraries
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE
+# ✅ Link Qt modules
+target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Qml
@@ -54,25 +53,24 @@ target_link_libraries(${PROJECT_NAME}
     Qt6::Sql
 )
 
-# ✅ Set C++ standard
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
-
-# ✅ Define your QML import path (where qmldir and Main.qml reside)
-set(QML_DIR "${CMAKE_SOURCE_DIR}/qml/pFinance")
-set_property(TARGET ${PROJECT_NAME} PROPERTY QT_QML_IMPORT_PATH "${QML_DIR}")
-
-
-# ✅ Copy QML files to runtime folder
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/qml/pFinance)
-
-file(GLOB_RECURSE QML_FILES
-    "${CMAKE_SOURCE_DIR}/qml/pFinance/*.qml"
+# ✅ Include directories
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+# ✅ Set C++ standard
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+
+# ✅ Setup QML import path and copy resources
+set(QML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/qml/pFinance")
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    QT_QML_IMPORT_PATH "${QML_DIR}"
+    QT_QML_SOURCE_DIR "${QML_DIR}"
+)
+
+# ✅ Copy QML files
+file(GLOB_RECURSE QML_FILES "${QML_DIR}/*.qml" "${QML_DIR}/qmldir")
 foreach(file IN LISTS QML_FILES)
-    file(RELATIVE_PATH relPath "${CMAKE_SOURCE_DIR}/qml/pFinance" "${file}")
+    file(RELATIVE_PATH relPath "${QML_DIR}" "${file}")
     configure_file(${file} "${CMAKE_BINARY_DIR}/qml/pFinance/${relPath}" COPYONLY)
 endforeach()
-
-# ✅ Copy qmldir file for runtime loading
-configure_file(${QML_DIR}/qmldir ${CMAKE_BINARY_DIR}/qml/pFinance/qmldir COPYONLY)
