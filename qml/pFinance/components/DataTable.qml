@@ -20,8 +20,6 @@ Item {
         id: toolbar
         width: parent.width
         height: 55
-        color: "#f0f0f0"
-        border.color: "#cccccc"
         z: 20
 
         Row {

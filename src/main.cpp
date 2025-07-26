@@ -11,7 +11,7 @@
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-    QQuickStyle::setStyle("Material");
+    // QQuickStyle::setStyle("Material");
 
     QQmlApplicationEngine engine;
     QObject::connect(
@@ -38,12 +38,8 @@ int main(int argc, char *argv[])
         qDebug() << "Vendor count:" << vendor->count();
 #endif
 
-    // Load list of vendors
-    VendorModel *vendorModel = new VendorModel(dbManager.database(), &app);
-    vendorModel->sortBy("name");
-    qDebug() << "Vendors loaded: " << vendorModel->rowCount();
-
     // Set context property in QML
+    VendorModel *vendorModel = new VendorModel(dbManager.database(), &app);
     engine.rootContext()->setContextProperty("vendorModel", vendorModel);
 
     // Load main application window

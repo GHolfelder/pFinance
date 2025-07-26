@@ -1,21 +1,71 @@
 // Main.qml
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import "components"
+import QtQuick.Layouts 1.15
 
 ApplicationWindow {
     visible: true
-    width: 600
-    height: 400
-    title: "Financial Tracker"
+    width: 800
+    height: 600
 
-    DataTable {
+    ColumnLayout {
         anchors.fill: parent
-        model: vendorModel
-        sortOrder: vendorModel.sortOrder
-        sortColumn: vendorModel.sortColumn
-        onSortRequested: (columnName) => {
-            vendorModel.sortBy(columnName);
+
+        // Persistent header with hamburger
+        ToolBar {
+            Layout.fillWidth: true
+            RowLayout {
+                spacing: 10
+
+                ToolButton {
+                    text: "\u2630" // Unicode hamburger
+                    onClicked: drawer.open()
+                }
+
+                Label {
+                    text: stackView.currentItem?.title ?? "Welcome"
+                    Layout.alignment: Qt.AlignVCenter
+                }
+            }
+        }
+
+        // StackView for page navigation
+        StackView {
+            id: stackView
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            initialItem: Component {
+                Loader {
+                    source: Qt.resolvedUrl("WelcomePage.qml")
+                }
+            }
+        }
+    }
+
+    // Optional drawer for navigation
+    Drawer {
+        id: drawer
+        width: 200
+        height: parent.height
+
+        Column {
+            ItemDelegate {
+                text: "🏠 Home"
+                onClicked: {
+                    stackView.clear()
+                    stackView.push(Qt.resolvedUrl("WelcomePage.qml"))
+                    drawer.close()
+                }
+            }
+            ItemDelegate {
+                text: "🧮 Vendor Browse"
+                onClicked: {
+                    stackView.clear()
+                    stackView.push(Qt.resolvedUrl("VendorBrowse.qml"))
+                    vendorModel.sortBy("name")
+                    drawer.close()
+                }
+            }
         }
     }
 }

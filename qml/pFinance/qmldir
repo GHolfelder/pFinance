@@ -1,4 +1,6 @@
 module pFinance
 
-Main 1.0 Main.qml
+Main            1.0 Main.qml
+VendorBrowse    1.0 VendorBrowse.qml
+WelcomePage     1.0 WelcomePage.qml
 components/DataTable 1.0 components/DataTable.qml
