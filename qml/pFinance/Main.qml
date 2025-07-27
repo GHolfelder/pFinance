@@ -58,11 +58,10 @@ ApplicationWindow {
                 }
             }
             ItemDelegate {
-                text: "🧮 Vendor Browse"
+                text: "🧮 Vendors"
                 onClicked: {
                     stackView.clear()
                     stackView.push(Qt.resolvedUrl("VendorBrowse.qml"))
-                    vendorModel.sortBy("name")
                     drawer.close()
                 }
             }

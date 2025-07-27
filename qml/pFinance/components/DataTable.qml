@@ -9,11 +9,40 @@ Item {
 
     // Custom properties
     property var model                      // Passed in model
+    property string form                    // Name of form to use for maintenance
     property int sortOrder                  // Current sort order (ascending / descending)
     property string sortColumn              // Current sort column
     property int selectedRow: -1            // Selected row in grid
+    property string selectedId: ""          // Id of selected row in grid
     property int minimumColumnWidth: 80     // Minimum column wodth
     signal sortRequested(var columnName)    // Signal emitted when a column header is clicked
+
+    // When a column is clicked
+    onSortRequested: (columnName) => {
+        selectedRow = model.sortBy(columnName, selectedId);
+        sortOrder   = model.sortOrder
+        sortColumn  = model.sortColumn
+    }
+
+    // When component is loaded
+    Component.onCompleted: {
+        selectedRow = model.sortBy(model.defaultSort(), selectedId);
+        sortOrder   = model.sortOrder
+        sortColumn  = model.sortColumn
+    }
+
+    /*
+     * Refresh grid after form is closed
+     *
+     * @param lastId Id of last record added or changed
+     */
+    function refresh(lastId) {
+        if (lastId !== "") {
+            selectedRow = model.refresh(lastId)
+            if (selectedRow >= 0) selectedId = lastId;
+        }
+        stackView.pop()
+    }
 
     // Action toolbar
     Rectangle {
@@ -31,7 +60,8 @@ Item {
                 text: "➕ Add"
                 width: 150
                 onClicked: {
-                    console.log("Add row")
+                    const formItem = stackView.push(Qt.resolvedUrl(form), { editId: "" })
+                    formItem.formClosed.connect((lastId) => refresh(lastId))
                 }
             }
             Button {
@@ -39,7 +69,8 @@ Item {
                 width: 150
                 enabled: selectedRow >= 0
                 onClicked: {
-                    console.log("Change row")
+                    const formItem = stackView.push(Qt.resolvedUrl(form), { editId: selectedId })
+                    formItem.formClosed.connect((lastId) => refresh(lastId))
                 }
             }
             Button {
@@ -53,6 +84,7 @@ Item {
         }
     }
 
+    // Grid column titles
     HorizontalHeaderView {
         id: horizontalHeader
         anchors.left: table.left
@@ -96,6 +128,7 @@ Item {
         }
     }
 
+    // Griod row titles
     VerticalHeaderView {
         id: verticalHeader
         anchors.top: horizontalHeader.bottom
@@ -105,7 +138,7 @@ Item {
         z: 10
     }
 
-    // 🔹 TableView
+    // TableView
     TableView {
         id: table
         model: dataTable.model
@@ -148,6 +181,7 @@ Item {
                 anchors.fill: parent
                 onClicked: {
                     selectedRow = model.row;
+                    selectedId = model.id;
                 }
             }
         }

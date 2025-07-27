@@ -80,7 +80,7 @@ QString ModelBase::sortColumn() {
  */
 void ModelBase::setSort(QString sortColumn) {
     // Toggle sort order if same column selected
-    if (sortColumn == m_sortColumn)
+    if (sortColumn != "" && sortColumn == m_sortColumn)
         m_sortOrder = (m_sortOrder == Qt::AscendingOrder) ? Qt::DescendingOrder : Qt::AscendingOrder;
     else {
         // Validate sort order
@@ -91,8 +91,6 @@ void ModelBase::setSort(QString sortColumn) {
             m_sortColumn = sortColumn;
         // Default to ascending order
         m_sortOrder = Qt::AscendingOrder;
-        // Notify interface that column has changed
-        emit sortColumnChanged();
     }
 
     // Notify interface that order has changed

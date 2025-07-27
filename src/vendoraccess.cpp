@@ -18,6 +18,8 @@ VendorAccess::VendorAccess(QSqlDatabase db, QObject *parent) : AccessBase(db, pa
 /**
  * @brief Count number of records in vendor table
  *
+ * Note: No signals are emitted from this method
+ *
  * @return Number of records in table, -1 if an error occurred
  */
 int VendorAccess::count() const {
@@ -64,7 +66,7 @@ bool VendorAccess::add(const QVariantMap &vendorData) {
     if (!query.exec())
         return fail(query.lastError().text());
 
-    return success("Vendor added with ID: " + guid);
+    return success("Vendor added with ID:", guid);
 }
 
 /**
@@ -74,18 +76,22 @@ bool VendorAccess::add(const QVariantMap &vendorData) {
  *
  * @param id Id of vendor to be retrieved
  * @param result Variant map where fields and their associated value will be returned
- * @return True if successful, otherwise false
+ * @return Variant mapo containing retrieved data
  */
-bool VendorAccess::get(const QString &id, QVariantMap &result) {
+QVariantMap VendorAccess::get(const QString &id) {
     QSqlQuery query(m_db);
+    QVariantMap result;
 
     query.prepare("SELECT * FROM vendors WHERE id = :id");
     query.bindValue(":id", id);
 
-    if (!query.exec())
-        return fail("Vendor retrieval failed: " + query.lastError().text());
-    else if (!query.next())
-        return fail("No vendor found with ID: " + id);
+    if (!query.exec()) {
+        fail("Vendor retrieval failed: " + query.lastError().text());
+        return result;
+    } else if (!query.next()) {
+        fail("No vendor found with ID: " + id);
+        return result;
+    }
 
     result["id"]             = query.value("id");
     result["name"]           = query.value("name");
@@ -97,8 +103,8 @@ bool VendorAccess::get(const QString &id, QVariantMap &result) {
     result["phone"]          = query.value("phone");
     result["unpaid_balance"] = query.value("unpaid_balance");
 
-    return true;
-    return success("Vendor retrieved with ID: " + id);
+    success("Vendor retrieved with ID:", id);
+    return result;
 }
 
 /**
@@ -137,7 +143,7 @@ bool VendorAccess::update(const QString &id, const QVariantMap &vendorData) {
     if (!query.exec())
         return fail(query.lastError().text());
 
-    return success("Vendor updated with ID: " + id);
+    return success("Vendor updated with ID:", id);
 }
 
 /**
@@ -155,11 +161,13 @@ bool VendorAccess::remove(const QString &id) {
     if (!query.exec())
         return fail(query.lastError().text());
 
-    return success("Vendor deleted with ID: " + id);
+    return success("Vendor deleted with ID:", id);
 }
 
 /**
  * @brief Generate requested number of sample vendor records
+ *
+ * Note: No signals are emitted from this method
  *
  * @param count Number of records to be generated
  * @return True if successful, otherwise false

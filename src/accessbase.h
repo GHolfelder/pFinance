@@ -18,7 +18,7 @@ signals:
 
 protected:
     bool fail(QString error);
-    bool success(QString message);
+    bool success(QString message, QString id);
 
     QSqlDatabase m_db;              // Database object
     QString m_error;                // Last error encountered

@@ -57,6 +57,8 @@ QVariant VendorModel::data(const QModelIndex &index, int role) const {
         return index.row();
     case ColumnRole:
         return index.column();
+    case IdRole:
+        return m_data.at(index.row()).at(0);
     default:
         break;
     }
@@ -85,7 +87,8 @@ QVariant VendorModel::headerData(int section, Qt::Orientation orientation, int r
         return COLUMN_NAMES.at(section);
     case ColumnRole:
         return section;
-    default:                break;
+    default:
+        break;
     }
 
     return QVariant();
@@ -106,18 +109,41 @@ QHash<int, QByteArray> VendorModel::roleNames() const {
     roles[CellNameRole] = "cellname";
     roles[RowRole] = "row";
     roles[ColumnRole] = "column";
+    roles[IdRole] = "id";
     return roles;
+}
+
+/**
+ * @brief Return the default column to be sorted
+ *
+ * @returns Name of column
+ */
+QString VendorModel::defaultSort() {
+    return "name";
 }
 
 /**
  * @brief Reload the model in the requested order
  *
  * @param columnName Column on which data is to be sorder
+ * @param id Value of id of record to be located
+ * @returns Index to found record or -1 if not found
  */
-void VendorModel::sortBy(const QString columnName) {
+int VendorModel::sortBy(const QString columnName, const QString &id) {
     setSort(columnName);
+    return refresh(id);
+}
 
-    // Load/Reload the data
+/**
+ * @brief Reload the model using the current properties
+ *
+ * @param id Value of id of record to be located
+ * @returns Index to found record or -1 if not found
+ */
+int VendorModel::refresh(const QString &id) {
+    int foundIdx = -1;
+    int index = -1;
+
     beginResetModel();
     m_data.clear();
 
@@ -130,15 +156,20 @@ void VendorModel::sortBy(const QString columnName) {
     if (!query.exec()) {
         qWarning() << "Failed to load vendors:" << query.lastError().text();
         endResetModel();
-        return;
+        return foundIdx;
     }
 
     while (query.next()) {
         QList<QString> v;
+        index += 1;
         for (const QString &name : COLUMN_NAMES) {
+            if (name == "id" && query.value(name) == id) {
+                foundIdx = index;
+            }
             v << query.value(name).toString();
         }
         m_data.append(v);
     }
     endResetModel();
+    return foundIdx;
 }

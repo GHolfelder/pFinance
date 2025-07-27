@@ -38,9 +38,10 @@ int main(int argc, char *argv[])
         qDebug() << "Vendor count:" << vendor->count();
 #endif
 
-    // Set context property in QML
+    // Set context properties in QML
     VendorModel *vendorModel = new VendorModel(dbManager.database(), &app);
     engine.rootContext()->setContextProperty("vendorModel", vendorModel);
+    engine.rootContext()->setContextProperty("vendorAccess", vendor);
 
     // Load main application window
     engine.addImportPath("qml");

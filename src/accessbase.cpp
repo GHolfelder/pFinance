@@ -40,17 +40,18 @@ bool AccessBase::fail(QString error) {
 /**
  * @brief Successgful operation return
  *
- * This clears the current error message and logs
- * the informational message.
+ * This clears the current error id and logs
+ * the informational id.
  *
  * A true is always returned.
  *
- * @param error Message to be emitted with successful operation
+ * @param message Message to be logged with successful operation
+ * @param id Id upon which operation was performed
  * @return true
  */
-bool AccessBase::success(QString message) {
+bool AccessBase::success(QString message, QString id) {
     m_error = "";
-    qInfo() << message;
-    emit operationSuccess(message);
+    qInfo() << message << id;
+    emit operationSuccess(id);
     return true;
 }

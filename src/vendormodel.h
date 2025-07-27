@@ -18,10 +18,13 @@ public:
         CellDataRole = Qt::UserRole + 1,
         CellNameRole,
         RowRole,
-        ColumnRole
+        ColumnRole,
+        IdRole
     };
 
-    Q_INVOKABLE void sortBy(const QString columnName);
+    Q_INVOKABLE QString defaultSort();
+    Q_INVOKABLE int sortBy(const QString columnName, const QString &id);
+    Q_INVOKABLE int refresh(const QString &id);
 
 private:
     static const QStringList COLUMN_TITLES;

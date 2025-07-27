@@ -3,13 +3,13 @@ import QtQuick.Controls 2.15
 import "components"
 
 Item {
+    id: vendorBrowse
     width: parent ? parent.width : 0
     height: parent ? parent.height : 0
 
     Column {
         anchors.fill: parent
         spacing: 10
-        // padding: 20
 
         Label {
             text: "🧮 Vendor List"
@@ -19,11 +19,7 @@ Item {
 
         DataTable {
             model: vendorModel
-            sortOrder: vendorModel.sortOrder
-            sortColumn: vendorModel.sortColumn
-            onSortRequested: (columnName) => {
-                vendorModel.sortBy(columnName);
-            }
+            form: "../VendorForm.qml"
         }
     }
 }
