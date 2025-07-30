@@ -1,7 +1,7 @@
 #ifndef VENDORACCESS_H
 #define VENDORACCESS_H
 
-#include "accessbase.h"
+#include "base/accessbase.h"
 #include <QObject>
 #include <QSqlDatabase>
 #include <QVariantMap>

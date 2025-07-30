@@ -1,7 +1,7 @@
 #ifndef VENDORMODEL_H
 #define VENDORMODEL_H
 
-#include "modelbase.h"
+#include "base/modelbase.h"
 #include <QtQml/qqmlregistration.h>
 
 class VendorModel : public ModelBase {
