@@ -19,6 +19,7 @@ Item {
 
         DataTable {
             model: vendorModel
+            access: vendorAccess
             form: "../VendorForm.qml"
         }
     }

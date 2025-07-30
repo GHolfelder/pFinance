@@ -7,6 +7,7 @@ Dialog {
     modal: true
     focus: true
     property string message: ""
+    property int buttons: Dialog.Ok
     property alias textColor: msgText.color
     property alias backgroundColor: background.color
 
@@ -35,6 +36,6 @@ Dialog {
         }
     }
 
-    standardButtons: Dialog.Ok
+    standardButtons: buttons
     onAccepted: msgBox.visible = false
 }

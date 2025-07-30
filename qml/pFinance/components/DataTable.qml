@@ -8,7 +8,8 @@ Item {
     height: parent.height
 
     // Custom properties
-    property var model                      // Passed in model
+    property var model                      // Passed in model used for browse
+    property var access                     // Passed in access used to delete row
     property string form                    // Name of form to use for maintenance
     property int sortOrder                  // Current sort order (ascending / descending)
     property string sortColumn              // Current sort column
@@ -42,6 +43,18 @@ Item {
             if (selectedRow >= 0) selectedId = lastId;
         }
         stackView.pop()
+    }
+
+    // Delete confirmation box
+    MsgBox {
+        id: msgBox
+        title: "Confirm"
+        message: "Record about to be deleted. Are you sure you wish to continue?"
+        buttons: Dialog.Yes | Dialog.No
+        onAccepted: {
+            access.remove(selectedId)
+            refresh(selectedId)
+        }
     }
 
     // Action toolbar
@@ -78,7 +91,7 @@ Item {
                 width: 150
                 enabled: selectedRow >= 0
                 onClicked: {
-                    console.log("Delete row")
+                    msgBox.open()
                 }
             }
         }
