@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import "components"
 
 Item {
@@ -15,6 +16,21 @@ Item {
 
     width: parent ? parent.width : 0
     height: parent ? parent.height : 0
+
+    // After form is open
+    Component.onCompleted: {
+        isLoading = true
+        vendorData = vendorAccess.get(editId)
+        firstField.focus = true
+    }
+
+    Toast {
+        id: toast
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom      // Or wherever you want it to appear
+        z: 999                             // Ensure it floats above other content
+        visible: false                     // Default hidden
+    }
 
     Column {
         anchors.fill: parent
@@ -63,30 +79,21 @@ Item {
             title: "Operation Failed"
         }
 
-        // Toast message area
-        Toast {
-            id: toast
-        }
-
-        // After form is open
-        Component.onCompleted: {
-            if (editId !== "") {
-                vendorData = vendorAccess.get(editId)
-            }
-            isLoading = false;
-        }
-
         // Connect to signals from access class
         Connections {
             target: vendorAccess
 
             function onOperationSuccess (id) {
-                if (!isLoading) {
+                if (isLoading) {
+                    isLoading = false
+                    firstField.focus = true
+                } else {
                     lastId = id
                     if (editId === "") {
                         toast.show("✅ Vendor added successfully")
-                        vendorData = {}       // Reset form data
-                        editId = ""           // Ensure we're in 'add' mode
+                        isLoading = true            // Start loading process
+                        editId = ""                 // Ensure we're in 'add' mode
+                        vendorData = vendorAccess.get(editId)
                     } else {
                         formClosed(lastId)
                     }
@@ -102,41 +109,72 @@ Item {
         }
 
         // Input Fields with left padding
-        Column {
+        ColumnLayout {
+            id: layoutParent
+            property int labelWidth: 150    // Shared width for all labels
+            property int textWidth: 300     // Shared width for all labels
+
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.margins: 20             // Adds left/right spacing
             spacing: 12
 
-            FormField {
-                labelText: "Vendor Name"
-                fieldText: vendorData.name || ""
-                onTextChanged: vendorData.name = fieldText
+            RowLayout {
+                Label {
+                    text: "Vendor name"
+                    Layout.preferredWidth: layoutParent.labelWidth
+                }
+                TextField {
+                    id: firstField
+                    text: vendorData.name
+                    Layout.preferredWidth: layoutParent.textWidth
+                    onTextChanged: vendorData.name = text
+                }
             }
-            FormField {
-                labelText: "Address 1"
-                fieldText: vendorData.address1 || ""
-                onTextChanged: vendorData.address1 = fieldText
+            RowLayout {
+                Label {
+                    text: "Address 1"
+                    Layout.preferredWidth: layoutParent.labelWidth
+                }
+                TextField {
+                    text: vendorData.address1
+                    Layout.preferredWidth: layoutParent.textWidth
+                    onTextChanged: vendorData.address1 = text
+                }
             }
-            FormField {
-                labelText: "Address 2"
-                fieldText: vendorData.address2 || ""
-                onTextChanged: vendorData.address2 = fieldText
+            RowLayout {
+                Label {
+                    text: "Address 2"
+                    Layout.preferredWidth: layoutParent.labelWidth
+                }
+                TextField {
+                    text: vendorData.address2
+                    Layout.preferredWidth: layoutParent.textWidth
+                    onTextChanged: vendorData.address2 = text
+                }
             }
-            FormField {
-                labelText: "City"
-                fieldText: vendorData.city || ""
-                onTextChanged: vendorData.city = fieldText
-            }
-            FormField {
-                labelText: "State"
-                fieldText: vendorData.state || ""
-                onTextChanged: vendorData.state = fieldText
-            }
-            FormField {
-                labelText: "Postal Code"
-                fieldText: vendorData.postal_code || ""
-                onTextChanged: vendorData.postal_code = fieldText
+            RowLayout {
+                Label {
+                    text: "City, state and postal code"
+                    Layout.preferredWidth: layoutParent.labelWidth
+                }
+                TextField {
+                    text: vendorData.city
+                    Layout.preferredWidth: (layoutParent.textWidth - 20) / 3
+                    onTextChanged: vendorData.city = text
+                }
+                TextField {
+                    text: vendorData.state
+                    Layout.preferredWidth: (layoutParent.textWidth - 20) / 3
+                    Layout.leftMargin: 5
+                    onTextChanged: vendorData.state = text
+                }
+                TextField {
+                    text: vendorData.postal_code
+                    Layout.preferredWidth: (layoutParent.textWidth - 20) / 3
+                    Layout.leftMargin: 5
+                    onTextChanged: vendorData.postal_code = text
+                }
             }
         }
     }

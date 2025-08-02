@@ -5,6 +5,18 @@
 #include <QUuid>
 #include <QDebug>
 
+const QStringList VendorAccess::COLUMN_NAMES = {
+    "id",
+    "name",
+    "address1",
+    "address2",
+    "city",
+    "state",
+    "postal_code",
+    "phone",
+    "unpaid_balance"
+};
+
 /**
  * @brief Vendor access constructor
  *
@@ -82,6 +94,19 @@ QVariantMap VendorAccess::get(const QString &id) {
     QSqlQuery query(m_db);
     QVariantMap result;
 
+    // Initialize empty record when no id is provided
+    if (id == "") {
+        for (const QString &name : COLUMN_NAMES) {
+            if (name == "unpaid_balance")
+                result[name] = 0;
+            else
+                result[name] = "";
+        }
+        success("Vendor retrieved with ID:", id);
+        return result;
+    }
+
+    // Retrieve record from database
     query.prepare("SELECT * FROM vendors WHERE id = :id");
     query.bindValue(":id", id);
 

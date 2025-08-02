@@ -18,6 +18,9 @@ public:
     Q_INVOKABLE bool update(const QString &id, const QVariantMap &vendorData);
     Q_INVOKABLE bool remove(const QString &id);
     Q_INVOKABLE bool generateSample(int count);
+
+private:
+    static const QStringList COLUMN_NAMES;
 };
 
 #endif // VENDOR_H
