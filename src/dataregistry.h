@@ -5,16 +5,16 @@
 #include <QSqlDatabase>
 
 // Forward declarations
-class VendorAccess;
+class VendorTable;
 
 class DataRegistry : public QObject {
     Q_OBJECT
-    VendorAccess* m_vendoraccess;   // Pointer to vendor access object
+    VendorTable* m_vendortable;   // Pointer to vendor access object
 
 public:
     explicit DataRegistry(QSqlDatabase db, QObject *parent = nullptr);
 
-    VendorAccess *vendoraccess() const;
+    VendorTable *vendortable() const;
 };
 
 #endif // DATAREGISTRY_H

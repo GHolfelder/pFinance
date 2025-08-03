@@ -1,5 +1,5 @@
 #include "dataregistry.h"
-#include "vendoraccess.h"
+#include "vendortable.h"
 
 /**
  * @brief Data registry constructor
@@ -10,7 +10,7 @@
  * @param parent Reference to parent class.
  */
 DataRegistry::DataRegistry(QSqlDatabase db, QObject *parent) : QObject{parent} {
-    m_vendoraccess = new VendorAccess(db, parent);
+    m_vendortable = new VendorTable(parent);
 }
 
 /**
@@ -18,6 +18,6 @@ DataRegistry::DataRegistry(QSqlDatabase db, QObject *parent) : QObject{parent} {
  *
  * @return Pointer to vendor access object
  */
-VendorAccess *DataRegistry::vendoraccess() const {
-    return m_vendoraccess;
+VendorTable *DataRegistry::vendortable() const {
+    return m_vendortable;
 }

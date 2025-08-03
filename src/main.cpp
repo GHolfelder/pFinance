@@ -3,6 +3,9 @@
 #include "vendoraccess.h"
 #include "vendormodel.h"
 
+#include "vendortable.h"
+#include "tableaccess.h"
+
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -30,18 +33,14 @@ int main(int argc, char *argv[])
 
     // Create data registry
     DataRegistry registry(dbManager.database(), &app);
-#ifdef QT_DEBUG
-    VendorAccess* vendor = registry.vendoraccess();
-    if (vendor->count() == 0)
-        vendor->generateSample(20);
-    else
-        qDebug() << "Vendor count:" << vendor->count();
-#endif
 
     // Set context properties in QML
     VendorModel *vendorModel = new VendorModel(dbManager.database(), &app);
     engine.rootContext()->setContextProperty("vendorModel", vendorModel);
-    engine.rootContext()->setContextProperty("vendorAccess", vendor);
+
+    VendorTable *vendorTable = registry.vendortable();
+    TableAccess *vendorAccess = new TableAccess(dbManager.database(), vendorTable, &app);
+    engine.rootContext()->setContextProperty("vendorAccess", vendorAccess);
 
     // Load main application window
     engine.addImportPath("qml");
