@@ -36,9 +36,11 @@ public:
 
     QVariantMap initialize();
 
+    int columnCount() const;
     QStringList columnNames(bool includePrimary = true) const;
     QStringList columnPlaceholders(bool includePrimary = true) const;
     QStringList columnTitles(bool includePrimary = true) const;
+    QString defaultSort() const;
     QString primaryKey(bool placeholder = false) const;
     QString toName(const QString placeholder) const;
 
@@ -47,6 +49,7 @@ public:
     QString deleteSql() const;
     QString insertSql(const QVariantMap &data) const;
     QString selectSql() const;
+    QString selectSql(const QString sortColumn, const Qt::SortOrder sortOrder) const;
     QString updateSql(const QVariantMap &data) const;
 
 private:

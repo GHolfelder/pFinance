@@ -1,10 +1,8 @@
 #include "databasemanager.h"
 #include "dataregistry.h"
-#include "vendoraccess.h"
-#include "vendormodel.h"
-
 #include "vendortable.h"
 #include "tableaccess.h"
+#include "tablemodel.h"
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -35,12 +33,13 @@ int main(int argc, char *argv[])
     DataRegistry registry(dbManager.database(), &app);
 
     // Set context properties in QML
-    VendorModel *vendorModel = new VendorModel(dbManager.database(), &app);
-    engine.rootContext()->setContextProperty("vendorModel", vendorModel);
+    /// VendorModel *vendorModel = new VendorModel(dbManager.database(), &app);
 
     VendorTable *vendorTable = registry.vendortable();
     TableAccess *vendorAccess = new TableAccess(dbManager.database(), vendorTable, &app);
+    TableModel *vendorModel = new TableModel(dbManager.database(), vendorTable, &app);
     engine.rootContext()->setContextProperty("vendorAccess", vendorAccess);
+    engine.rootContext()->setContextProperty("vendorModel", vendorModel);
 
     // Load main application window
     engine.addImportPath("qml");

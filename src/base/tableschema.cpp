@@ -66,6 +66,15 @@ QVariantMap TableSchema::initialize() {
 }
 
 /**
+ * @brief Get count of defined columns
+ *
+ * @returns Number of columns in table
+ */
+int TableSchema::columnCount() const {
+    return m_columns.count();
+}
+
+/**
  * @brief Column names getter
  *
  * @param includePrimary When true, primary field is included, otherwise the primary key will not be in the result set.
@@ -112,6 +121,22 @@ QStringList TableSchema::columnTitles(bool includePrimary) const {
             titles << column.title;
     }
     return titles;
+}
+
+/**
+ * @brief Get default sort columns
+ *
+ * The first field tyhat is not a primary key will always be
+ * the default sort column.
+ *
+ * @returns QString name of column to be sorted by default
+ */
+QString TableSchema::defaultSort() const {
+    for (const ColumnDefinition &column : m_columns) {
+        if (!column.isPrimaryKey)
+            return column.name;
+    }
+    return "";
 }
 
 /**
@@ -228,6 +253,14 @@ QString TableSchema::selectSql() const {
     // Return generated statement
     return QString("SELECT %1 FROM %2 WHERE %3 = %4")
         .arg(columns.join(", "), m_tableName, primaryKey(false), primaryKey(true));
+}
+
+QString TableSchema::selectSql(const QString sortColumn, const Qt::SortOrder sortOrder) const {
+    QStringList const columns = columnNames(true);
+
+    // Return generated statement
+    return QString("SELECT %1 FROM %2 ORDER BY %3 %4")
+        .arg(columns.join(", "), m_tableName, sortColumn, sortOrder == Qt::AscendingOrder ? "ASC" : "DESC");
 }
 
 /**

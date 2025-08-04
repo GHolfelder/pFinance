@@ -15,9 +15,7 @@
  * @param table Table schema to be used for all access
  * @param parent Reference to parent class.
  */
-TableAccess::TableAccess(QSqlDatabase db, TableSchema *table, QObject *parent) : QObject{parent} {
-    m_db = db;
-    m_table = table;
+TableAccess::TableAccess(QSqlDatabase db, TableSchema *table, QObject *parent) : QObject(parent), TableMixin<TableAccess>(db, table) {
     setObjectName(m_table->tableName() + "TableAccess");
 }
 
@@ -168,50 +166,4 @@ bool TableAccess::remove(const QString &id) {
         return fail("delete failed: " + query.lastError().text());
 
     return success("deleted ID:", id);
-}
-
-/**
- * @brief Get text of last error generated
- *
- * @returns Error text
- */
-QString TableAccess::error() const {
-    return m_error;
-}
-
-/**
- * @brief Failed operation return.
- *
- * This saves any error that has occurred, logs the error
- * for debug purposes and emits an operation failed signal.
- *
- * A false is always returned.
- *
- * @param error Message indicating error that has occurred
- * @returns false
- */
-bool TableAccess::fail(QString error) {
-    m_error = m_table->tableName() + " " + error;
-    qDebug() << m_error;
-    emit operationFailed(m_error);
-    return false;
-}
-
-/**
- * @brief Successful operation return
- *
- * This clears the current error text and logs
- * an informational message.
- *
- * A true is always returned.
- *
- * @param message Message to be logged with successful operation
- * @param id Id upon which operation was performed
- * @returns true
- */
-bool TableAccess::success(QString message, QString id) {
-    m_error = "";
-    qInfo() << m_table->tableName() + " " + message + " " + id;
-    emit operationSuccess(id);
-    return true;
 }

@@ -19,24 +19,23 @@ qt_standard_project_setup()
 
 # ✅ Define sources
 set(SOURCES
-    src/base/modelbase.cpp
     src/base/tableschema.cpp
     src/main.cpp
     src/databasemanager.cpp
     src/dataregistry.cpp
-    src/vendormodel.cpp
     src/vendortable.cpp
     src/tableaccess.cpp
+    src/tablemodel.cpp
 )
 
 set(HEADERS
-    src/base/modelbase.h
+    src/base/tablemixin.h
     src/base/tableschema.h
     src/databasemanager.h
     src/dataregistry.h
-    src/vendormodel.h
     src/vendortable.h
     src/tableaccess.h
+    src/tablemodel.h
 )
 
 # ✅ Add main executable

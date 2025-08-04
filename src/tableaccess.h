@@ -4,11 +4,14 @@
 #include <QObject>
 #include <QSqlDatabase>
 #include <QVariantMap>
-#include "base/tableschema.h"
+#include <QtQml/qqmlregistration.h>
+#include "base/tablemixin.h"
 
-class TableAccess : public QObject
+class TableAccess : public QObject, public TableMixin<TableAccess>
 {
     Q_OBJECT
+    QML_ELEMENT                                     // This makes the class available for use/instantiation on the QML side.
+
 public:
     explicit TableAccess(QSqlDatabase db, TableSchema *table, QObject *parent = nullptr);
 
@@ -18,19 +21,18 @@ public:
     Q_INVOKABLE bool update(const QString &id, const QVariantMap &data);
     Q_INVOKABLE bool remove(const QString &id);
 
-    QString error() const;
+    // Expose signal emitters for the mixin
+    void emitSuccess(const QString &message, const QString &id) {
+        emit operationSuccess(message, id);
+    }
+    void emitFailed(const QString &error) {
+        emit operationFailed(error);
+    }
 
 signals:
-    void operationSuccess(const QString &message);
+    void operationSuccess(const QString &message, const QString &id);
     void operationFailed(const QString &error);
 
-protected:
-    bool fail(QString error);
-    bool success(QString message, QString id);
-
-    QSqlDatabase m_db;                              // Database object
-    TableSchema *m_table;                             // Table schema
-    QString m_error;                                // Text of last error encountered
 };
 
 #endif // TABLEACCESS_H
