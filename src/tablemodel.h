@@ -23,6 +23,7 @@ class TableModel : public QAbstractTableModel, public TableMixin<TableModel>
     // Properties to be made available to the interface
     Q_PROPERTY(Qt::SortOrder sortOrder READ sortOrder NOTIFY sortOrderChanged)
     Q_PROPERTY(QString sortColumn READ sortColumn NOTIFY sortColumnChanged)
+    Q_PROPERTY(QStringList visibleColumns READ visibleColumns WRITE setVisibleColumns NOTIFY visibleColumnsChanged)
 
 public:
     explicit TableModel(QSqlDatabase db, TableSchema *table, QObject *parent = nullptr);
@@ -33,6 +34,8 @@ public:
     int rowCount(const QModelIndex & = QModelIndex()) const override;
     Qt::SortOrder sortOrder();
     QString sortColumn();
+    QStringList visibleColumns() const;
+    void setVisibleColumns(const QStringList &columns);
 
     Q_INVOKABLE QString defaultSort();
     Q_INVOKABLE int sortBy(const QString sortColumn, const QString &id);
@@ -49,12 +52,16 @@ public:
 signals:
     void sortOrderChanged();
     void sortColumnChanged();
+    void visibleColumnsChanged();
     void operationSuccess(const QString &message, const QString &id);
     void operationFailed(const QString &error);
 
 protected:
+    int columnToIndex(const int column) const;
+
     Qt::SortOrder m_sortOrder;                      // Current sort order (Ascending / Descending)
     QString m_sortColumn;                           // Current sort column
+    QStringList m_visibleColumns;                   // List of visible column names
     QVector<QVector<QString>> m_data;               // Vector of vectors of data to be displayed
 };
 

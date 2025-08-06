@@ -16,6 +16,8 @@
  */
 TableModel::TableModel(QSqlDatabase db, TableSchema *table, QObject *parent) : QAbstractTableModel(parent), TableMixin<TableModel>(db, table) {
     setObjectName(m_table->tableName() + "TableModel");
+    // Set list of visible columns
+    m_visibleColumns = m_table->columnNames(false);
 }
 
 /**
@@ -26,17 +28,21 @@ TableModel::TableModel(QSqlDatabase db, TableSchema *table, QObject *parent) : Q
  * @returns Requested data or an empty QVariant
  */
 QVariant TableModel::data(const QModelIndex &index, int role) const {
+    int columnIndex = -1;
+
+    // Retrieve requested information
     switch (role) {
     case CellDataRole:
-        return m_data.at(index.row()).at(index.column());
+        columnIndex = columnToIndex(index.column());
+        return m_data.at(index.row()).at(columnIndex);
     case CellNameRole:
-        return m_table->columnNames().at(index.column());
+        return m_visibleColumns.at(index.column());
     case RowRole:
         return index.row();
     case ColumnRole:
         return index.column();
     case IdRole:
-        return m_data.at(index.row()).at(0);
+        return m_data.at(index.row()).at(m_table->columnNames(true).indexOf(m_table->primaryKey()));
     default:
         break;
     }
@@ -53,17 +59,21 @@ QVariant TableModel::data(const QModelIndex &index, int role) const {
  * @returns Requested data or an empty QVariant
  */
 QVariant TableModel::headerData(int section, Qt::Orientation orientation, int role) const {
+    int columnIndex = -1;
+
+    // Retrieve requested information
     switch (role) {
     case Qt::DisplayRole:
     {
         if (orientation == Qt::Horizontal) {
-            return m_table->columnTitles().at(section);
+            columnIndex = columnToIndex(section);
+            return m_table->columnTitles().at(columnIndex);
         } else if (orientation == Qt::Vertical) {
             return QVariant::fromValue(section + 1);
         }
     }
     case CellNameRole:
-        return m_table->columnNames().at(section);
+        return m_visibleColumns.at(section);
     case ColumnRole:
         return section;
     default:
@@ -96,11 +106,11 @@ QHash<int, QByteArray> TableModel::roleNames() const {
  * @brief Get the number of columns for the given parent.
  *
  * @param parent Parent for which column count is desired (not used)
- * @returns Number of columns based on the number of columns in table
+ * @returns Number of columns based on the number of visiblke columns
  */
 int TableModel::columnCount(const QModelIndex &parent) const {
     Q_UNUSED(parent)
-    return m_table->columnCount();
+    return m_visibleColumns.size();
 }
 
 /**
@@ -130,6 +140,30 @@ Qt::SortOrder TableModel::sortOrder() {
  */
 QString TableModel::sortColumn() {
     return m_sortColumn;
+}
+
+/**
+ * @brief Get list of visible column names
+ *
+ * @returns List of visible column names
+ */
+QStringList TableModel::visibleColumns() const {
+    return m_visibleColumns;
+}
+
+/**
+ * @brief Set list of visible column names
+ *
+ * @param columns List of visible column names
+ */
+void TableModel::setVisibleColumns(const QStringList &columns) {
+    if (m_visibleColumns != columns) {
+        m_visibleColumns = columns;
+        emit visibleColumnsChanged();
+        // Optionally trigger layout change
+        // beginResetModel();
+        // endResetModel();
+    }
 }
 
 /**
@@ -208,7 +242,24 @@ int TableModel::refresh(const QString &id) {
         m_data.append(v);
     }
     endResetModel();
-    success("successful query", id);
+    success("successful query by", m_sortColumn);
 
     return foundIdx;
+}
+
+/**
+ * @brief Convert column index to data index
+ *
+ * This uses the visible column list to convert the column
+ * index from the browse to the data index.
+ *
+ * @param column Index to column in browse
+ * @returns Data column index or -1
+ */
+int TableModel::columnToIndex(const int column) const {
+    if (column < m_visibleColumns.size()) {
+        QString columnName = m_visibleColumns.at(column);
+        return m_table->columnNames().indexOf(columnName);
+    }
+    return -1;
 }
