@@ -143,6 +143,24 @@ QString TableModel::sortColumn() {
 }
 
 /**
+ * @brief Get list of column names
+ *
+ * @returns List of column names
+ */
+QStringList TableModel::columnNames() const {
+    return m_table->columnNames();
+}
+
+/**
+ * @brief Get list of column titles
+ *
+ * @returns List of column titles
+ */
+QStringList TableModel::columnTitles() const {
+    return m_table->columnTitles();
+}
+
+/**
  * @brief Get list of visible column names
  *
  * @returns List of visible column names
@@ -157,12 +175,21 @@ QStringList TableModel::visibleColumns() const {
  * @param columns List of visible column names
  */
 void TableModel::setVisibleColumns(const QStringList &columns) {
-    if (m_visibleColumns != columns) {
-        m_visibleColumns = columns;
+    const QStringList allColumns = m_table->columnNames(true);
+    QStringList newColumns;
+
+    // Validate and transfer columns to new column list
+    for (const QString &name : allColumns) {
+        if (columns.contains(name)) newColumns << name;
+    }
+
+    // On change in list
+    if (m_visibleColumns != newColumns) {
+        m_visibleColumns = newColumns;
         emit visibleColumnsChanged();
-        // Optionally trigger layout change
-        // beginResetModel();
-        // endResetModel();
+        // Trigger layout change
+        beginResetModel();
+        endResetModel();
     }
 }
 

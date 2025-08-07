@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "."
 
 Item {
     id: dataTable
@@ -57,6 +58,35 @@ Item {
         }
     }
 
+    // Popup showing column visibility settings
+    Popup {
+        id: columnPopup
+        modal: true
+        x: settingsButton.x
+        y: settingsButton.y + settingsButton.height
+        width: 320
+        height: implicitHeight
+
+        // ✅ Proper background assignment
+        background: Rectangle {
+            color: "#f0f0f0"
+            radius: 6
+            border.color: "#cccccc"
+            border.width: 1
+        }
+
+        // ✅ Proper content assignment
+        contentItem: ColumnSelector {
+            columnNames: model.columnNames
+            columnTitles: model.columnTitles
+            visibleColumns: model.visibleColumns
+
+            onVisibilityUpdated: (updatedList) => {
+                model.setVisibleColumns(updatedList)
+            }
+        }
+    }
+
     // Action toolbar
     Rectangle {
         id: toolbar
@@ -69,6 +99,11 @@ Item {
             spacing: 10
             padding: 10
 
+            Button {
+                id: settingsButton
+                text: "⚙️"
+                onClicked: columnPopup.open()
+            }
             Button {
                 text: "➕ Add"
                 width: 150

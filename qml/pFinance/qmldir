@@ -4,6 +4,7 @@ Main            1.0 Main.qml
 VendorBrowse    1.0 VendorBrowse.qml
 VendorForm      1.0 VendorForm.qml
 WelcomePage     1.0 WelcomePage.qml
-components/DataTable    1.0 components/DataTable.qml
-components/MsgBox       1.0 components/MsgBox.qml
-components/Toast        1.0 components/Toast.qml
+components/DataTable            1.0 components/DataTable.qml
+components/MsgBox               1.0 components/MsgBox.qml
+components/Toast                1.0 components/Toast.qml
+components/ColumnSelector.qml   1.0 components/ColumnSelector.qml

@@ -15,6 +15,6 @@ VendorTable::VendorTable(QObject *parent) : TableSchema ("Vendors", parent) {
     addColumn({"city",              tr("City"),             COLUMNTYPE::STRING,     "TEXT",             false,  false,  false,  ""});
     addColumn({"state",             tr("State"),            COLUMNTYPE::STRING,     "TEXT",             false,  false,  false,  ""});
     addColumn({"postal_code",       tr("Post code"),        COLUMNTYPE::STRING,     "TEXT",             false,  false,  false,  ""});
-    addColumn({"phone",             tr("Phone number"),     COLUMNTYPE::STRING,     "TEXT",             false,  false,  false,  ""});
-    addColumn({"unpaid_balance",    tr("Unpaid\nBalance"),  COLUMNTYPE::CURRENCY,   "DECIMAL(12,2)",    false,  false,  false,  "0"});
+    addColumn({"phone",             tr("Phone\nnumber"),    COLUMNTYPE::STRING,     "TEXT",             false,  false,  false,  ""});
+    addColumn({"unpaid_balance",    tr("Unpaid\nbalance"),  COLUMNTYPE::CURRENCY,   "DECIMAL(12,2)",    false,  false,  false,  "0"});
 }

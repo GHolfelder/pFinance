@@ -23,6 +23,8 @@ class TableModel : public QAbstractTableModel, public TableMixin<TableModel>
     // Properties to be made available to the interface
     Q_PROPERTY(Qt::SortOrder sortOrder READ sortOrder NOTIFY sortOrderChanged)
     Q_PROPERTY(QString sortColumn READ sortColumn NOTIFY sortColumnChanged)
+    Q_PROPERTY(QStringList columnNames READ columnNames CONSTANT)
+    Q_PROPERTY(QStringList columnTitles READ columnTitles CONSTANT)
     Q_PROPERTY(QStringList visibleColumns READ visibleColumns WRITE setVisibleColumns NOTIFY visibleColumnsChanged)
 
 public:
@@ -34,10 +36,12 @@ public:
     int rowCount(const QModelIndex & = QModelIndex()) const override;
     Qt::SortOrder sortOrder();
     QString sortColumn();
+    QStringList columnNames() const;
+    QStringList columnTitles() const;
     QStringList visibleColumns() const;
-    void setVisibleColumns(const QStringList &columns);
 
     Q_INVOKABLE QString defaultSort();
+    Q_INVOKABLE void setVisibleColumns(const QStringList &columns);
     Q_INVOKABLE int sortBy(const QString sortColumn, const QString &id);
     Q_INVOKABLE int refresh(const QString &id);
 
