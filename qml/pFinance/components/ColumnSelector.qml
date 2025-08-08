@@ -20,6 +20,12 @@ Control {
         border.width: 1
     }
 
+    // When component is loaded
+    Component.onCompleted: {
+        filterField.focus = true
+    }
+
+
     contentItem: Column {
         spacing: 8
 

@@ -67,6 +67,8 @@ Item {
         width: 320
         height: implicitHeight
 
+        focus: true
+
         // ✅ Proper background assignment
         background: Rectangle {
             color: "#f0f0f0"
