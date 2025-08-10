@@ -124,6 +124,26 @@ QStringList TableSchema::columnTitles(bool includePrimary) const {
 }
 
 /**
+ * @brief Column types getter
+ *
+ * @param includePrimary When true, primary field is included, otherwise the primary key will not be in the result set.
+ * @returns QString list of column types represented as a string that corresponds to their enum value
+ */
+QStringList TableSchema::columnTypes(bool includePrimary) const {
+    QStringList types;
+    for (const ColumnDefinition &column : m_columns) {
+        if (includePrimary || !column.isPrimaryKey) switch (column.type) {
+            case COLUMNTYPE::STRING:   types << "STRING"; break;
+            case COLUMNTYPE::INT:      types << "INT"; break;
+            case COLUMNTYPE::DATE:     types << "DATE"; break;
+            case COLUMNTYPE::CURRENCY: types << "CURRENCY"; break;
+            case COLUMNTYPE::FLOAT:    types << "FLOAT"; break;
+        }
+    }
+    return types;
+}
+
+/**
  * @brief Get default sort columns
  *
  * The first field tyhat is not a primary key will always be

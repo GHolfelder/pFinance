@@ -25,6 +25,7 @@ class TableModel : public QAbstractTableModel, public TableMixin<TableModel>
     Q_PROPERTY(QString sortColumn READ sortColumn NOTIFY sortColumnChanged)
     Q_PROPERTY(QStringList columnNames READ columnNames CONSTANT)
     Q_PROPERTY(QStringList columnTitles READ columnTitles CONSTANT)
+    Q_PROPERTY(QStringList columnTypes READ columnTypes CONSTANT)
     Q_PROPERTY(QStringList visibleColumns READ visibleColumns WRITE setVisibleColumns NOTIFY visibleColumnsChanged)
 
 public:
@@ -38,6 +39,7 @@ public:
     QString sortColumn();
     QStringList columnNames() const;
     QStringList columnTitles() const;
+    QStringList columnTypes() const;
     QStringList visibleColumns() const;
 
     Q_INVOKABLE QString defaultSort();

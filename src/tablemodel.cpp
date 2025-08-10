@@ -161,6 +161,15 @@ QStringList TableModel::columnTitles() const {
 }
 
 /**
+ * @brief Get list of column types
+ *
+ * @returns List of column types represented as a string that corresponds to their enum value
+ */
+QStringList TableModel::columnTypes() const {
+    return m_table->columnTypes();
+}
+
+/**
  * @brief Get list of visible column names
  *
  * @returns List of visible column names

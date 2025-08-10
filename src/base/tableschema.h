@@ -40,6 +40,7 @@ public:
     QStringList columnNames(bool includePrimary = true) const;
     QStringList columnPlaceholders(bool includePrimary = true) const;
     QStringList columnTitles(bool includePrimary = true) const;
+    QStringList columnTypes(bool includePrimary = true) const;
     QString defaultSort() const;
     QString primaryKey(bool placeholder = false) const;
     QString toName(const QString placeholder) const;
