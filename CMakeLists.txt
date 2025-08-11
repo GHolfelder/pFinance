@@ -20,10 +20,10 @@ qt_standard_project_setup()
 # ✅ Define sources
 set(SOURCES
     src/base/tableschema.cpp
+    src/tables/vendortable.cpp
     src/main.cpp
     src/databasemanager.cpp
-    src/dataregistry.cpp
-    src/vendortable.cpp
+    src/databasetables.cpp
     src/tableaccess.cpp
     src/tablemodel.cpp
 )
@@ -31,9 +31,9 @@ set(SOURCES
 set(HEADERS
     src/base/tablemixin.h
     src/base/tableschema.h
+    src/tables/vendortable.h
     src/databasemanager.h
-    src/dataregistry.h
-    src/vendortable.h
+    src/databasetables.h
     src/tableaccess.h
     src/tablemodel.h
 )

@@ -21,7 +21,6 @@ Item {
     Component.onCompleted: {
         isLoading = true
         vendorData = vendorAccess.get(editId)
-        firstField.focus = true
     }
 
     Toast {
@@ -86,7 +85,6 @@ Item {
             function onOperationSuccess (id) {
                 if (isLoading) {
                     isLoading = false
-                    firstField.focus = true
                 } else {
                     lastId = id
                     if (editId === "") {
@@ -121,19 +119,19 @@ Item {
 
             RowLayout {
                 Label {
-                    text: "Vendor name"
+                    text: qsTr("Vendor name")
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
                 TextField {
-                    id: firstField
                     text: vendorData.name
                     Layout.preferredWidth: layoutParent.textWidth
                     onTextChanged: vendorData.name = text
+                    focus: true
                 }
             }
             RowLayout {
                 Label {
-                    text: "Address 1"
+                    text: qsTr("Address 1")
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
                 TextField {
@@ -144,7 +142,7 @@ Item {
             }
             RowLayout {
                 Label {
-                    text: "Address 2"
+                    text: qsTr("Address 2")
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
                 TextField {
@@ -155,7 +153,7 @@ Item {
             }
             RowLayout {
                 Label {
-                    text: "City, state and postal code"
+                    text: qsTr("City, state and postal code")
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
                 TextField {

@@ -1,6 +1,6 @@
 #include "databasemanager.h"
-#include "dataregistry.h"
-#include "vendortable.h"
+#include "databasetables.h"
+#include "tables/vendortable.h"
 #include "tableaccess.h"
 #include "tablemodel.h"
 
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
         return -1;
 
     // Create data registry
-    DataRegistry registry(dbManager.database(), &app);
+    DatabaseTables registry(dbManager.database(), &app);
 
     // Set context properties in QML
     /// VendorModel *vendorModel = new VendorModel(dbManager.database(), &app);

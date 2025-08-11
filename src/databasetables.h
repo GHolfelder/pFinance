@@ -1,5 +1,5 @@
-#ifndef DATAREGISTRY_H
-#define DATAREGISTRY_H
+#ifndef DATABASETABLES_H
+#define DATABASETABLES_H
 
 #include <QObject>
 #include <QSqlDatabase>
@@ -7,14 +7,14 @@
 // Forward declarations
 class VendorTable;
 
-class DataRegistry : public QObject {
+class DatabaseTables : public QObject {
     Q_OBJECT
     VendorTable* m_vendortable;   // Pointer to vendor access object
 
 public:
-    explicit DataRegistry(QSqlDatabase db, QObject *parent = nullptr);
+    explicit DatabaseTables(QSqlDatabase db, QObject *parent = nullptr);
 
     VendorTable *vendortable() const;
 };
 
-#endif // DATAREGISTRY_H
+#endif // DATABASETABLES_H
