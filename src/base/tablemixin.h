@@ -26,9 +26,9 @@ protected:
         return true;
     }
 
-    QSqlDatabase m_db;
-    TableSchema *m_table;
-    QString m_error;
+    QSqlDatabase m_db;                              // Database object where tables are located
+    TableSchema *m_table;                           // Table being managed
+    QString m_error;                                // Last error encountered
 };
 
 #endif // TABLEMIXIN_H

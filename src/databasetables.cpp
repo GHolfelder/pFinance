@@ -1,5 +1,6 @@
 #include "databasetables.h"
 #include "tables/vendortable.h"
+#include "tables/statetable.h"
 
 /**
  * @brief Data registry constructor
@@ -9,15 +10,14 @@
  * @param db Database object where tables are located
  * @param parent Reference to parent class.
  */
-DatabaseTables::DatabaseTables(QSqlDatabase db, QObject *parent) : QObject{parent} {
-    m_vendortable = new VendorTable(parent);
+DatabaseTables::DatabaseTables(QObject *parent) : QObject{parent} {
+    VendorTable *vendor = new VendorTable(this);
+    m_tables.insert(vendor->tableName(), vendor);
+    StateTable *state = new StateTable(this);
+    m_tables.insert(state->tableName(), state);
 }
 
-/**
- * @brief Vendor access getter
- *
- * @return Pointer to vendor access object
- */
-VendorTable *DatabaseTables::vendortable() const {
-    return m_vendortable;
+TableSchema* DatabaseTables::fetch(const QString &tableName) const {
+    auto it = m_tables.find(tableName);
+    return (it != m_tables.end()) ? it.value() : nullptr;
 }

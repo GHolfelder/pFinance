@@ -6,8 +6,8 @@
 
 class DatabaseManager : public QObject {
     Q_OBJECT
-    QSqlDatabase m_db;              // Database object
-    QString m_error;                // Last error encountered
+    QSqlDatabase m_db;                              // Database object
+    QString m_error;                                // Last error encountered
 
 public:
     explicit DatabaseManager(QObject *parent = nullptr);

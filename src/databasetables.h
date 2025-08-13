@@ -3,18 +3,21 @@
 
 #include <QObject>
 #include <QSqlDatabase>
+#include <QMap>
+#include <QString>
+#include "base/tableschema.h"
 
 // Forward declarations
 class VendorTable;
 
 class DatabaseTables : public QObject {
     Q_OBJECT
-    VendorTable* m_vendortable;   // Pointer to vendor access object
+    QMap<QString, TableSchema*> m_tables;           // Map of database access classes
 
 public:
-    explicit DatabaseTables(QSqlDatabase db, QObject *parent = nullptr);
+    explicit DatabaseTables(QObject *parent = nullptr);
 
-    VendorTable *vendortable() const;
+    TableSchema* fetch(const QString &tableName) const;
 };
 
 #endif // DATABASETABLES_H

@@ -1,6 +1,5 @@
 #include "databasemanager.h"
 #include "databasetables.h"
-#include "tables/vendortable.h"
 #include "tableaccess.h"
 #include "tablemodel.h"
 
@@ -29,13 +28,14 @@ int main(int argc, char *argv[])
     if (!dbManager.initializeSchema())
         return -1;
 
-    // Create data registry
-    DatabaseTables registry(dbManager.database(), &app);
+    // Create data tables
+    DatabaseTables tables(&app);
 
     // Set context properties in QML
     /// VendorModel *vendorModel = new VendorModel(dbManager.database(), &app);
 
-    VendorTable *vendorTable = registry.vendortable();
+    TableSchema *stateTable = tables.fetch("States");
+    TableSchema *vendorTable = tables.fetch("Vendors");
     TableAccess *vendorAccess = new TableAccess(dbManager.database(), vendorTable, &app);
     TableModel *vendorModel = new TableModel(dbManager.database(), vendorTable, &app);
     engine.rootContext()->setContextProperty("vendorAccess", vendorAccess);
