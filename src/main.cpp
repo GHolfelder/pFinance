@@ -32,12 +32,8 @@ int main(int argc, char *argv[])
     DatabaseTables tables(&app);
 
     // Set context properties in QML
-    /// VendorModel *vendorModel = new VendorModel(dbManager.database(), &app);
-
-    TableSchema *stateTable = tables.fetch("States");
-    TableSchema *vendorTable = tables.fetch("Vendors");
-    TableAccess *vendorAccess = new TableAccess(dbManager.database(), vendorTable, &app);
-    TableModel *vendorModel = new TableModel(dbManager.database(), vendorTable, &app);
+    TableAccess *vendorAccess = new TableAccess(dbManager.database(), &tables, "Vendors", &app);
+    TableModel *vendorModel = new TableModel(dbManager.database(), &tables, "Vendors", &app);
     engine.rootContext()->setContextProperty("vendorAccess", vendorAccess);
     engine.rootContext()->setContextProperty("vendorModel", vendorModel);
 

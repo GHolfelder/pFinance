@@ -14,8 +14,11 @@
  * @param table Table schema to be used for all access
  * @param parent Reference to parent class.
  */
-TableModel::TableModel(QSqlDatabase db, TableSchema *table, QObject *parent) : QAbstractTableModel(parent), TableMixin<TableModel>(db, table) {
+TableModel::TableModel(QSqlDatabase db, DatabaseTables *tables, QString tableName, QObject *parent) : QAbstractTableModel(parent), TableMixin<TableModel>(db, tables->fetch(tableName)) {
+    m_table = tables->fetch(tableName);
     setObjectName(m_table->tableName() + "TableModel");
+    // Initialize state
+    m_state = new State(db, tables, parent);
     // Set list of visible columns
     m_visibleColumns = m_table->columnNames(false);
 }

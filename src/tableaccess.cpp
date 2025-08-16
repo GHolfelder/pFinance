@@ -15,7 +15,8 @@
  * @param table Table schema to be used for all access
  * @param parent Reference to parent class.
  */
-TableAccess::TableAccess(QSqlDatabase db, TableSchema *table, QObject *parent) : QObject(parent), TableMixin<TableAccess>(db, table) {
+TableAccess::TableAccess(QSqlDatabase db, DatabaseTables *tables, QString tableName, QObject *parent) : QObject(parent), TableMixin<TableAccess>(db, tables->fetch(tableName)) {
+    m_table = tables->fetch(tableName);
     setObjectName(m_table->tableName() + "TableAccess");
 }
 

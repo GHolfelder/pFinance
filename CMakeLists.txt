@@ -25,6 +25,7 @@ set(SOURCES
     src/main.cpp
     src/databasemanager.cpp
     src/databasetables.cpp
+    src/state.cpp
     src/tableaccess.cpp
     src/tablemodel.cpp
 )
@@ -36,6 +37,7 @@ set(HEADERS
     src/tables/vendortable.h
     src/databasemanager.h
     src/databasetables.h
+    src/state.h
     src/tableaccess.h
     src/tablemodel.h
 )

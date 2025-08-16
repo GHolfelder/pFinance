@@ -6,6 +6,7 @@
 #include <QAbstractTableModel>
 #include <QtQml/qqmlregistration.h>
 #include "base/tablemixin.h"
+#include "state.h"
 
 enum TableRoles {                                   // Used to setup custom roles if the built-in roles are inadequate
     CellDataRole = Qt::UserRole + 1,
@@ -29,7 +30,7 @@ class TableModel : public QAbstractTableModel, public TableMixin<TableModel>
     Q_PROPERTY(QStringList visibleColumns READ visibleColumns WRITE setVisibleColumns NOTIFY visibleColumnsChanged)
 
 public:
-    explicit TableModel(QSqlDatabase db, TableSchema *table, QObject *parent = nullptr);
+    explicit TableModel(QSqlDatabase db, DatabaseTables *tables, QString tableName, QObject *parent = nullptr);
     QVariant data(const QModelIndex &index, int role) const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
@@ -69,6 +70,7 @@ protected:
     QString m_sortColumn;                           // Current sort column
     QStringList m_visibleColumns;                   // List of visible column names
     QVector<QVector<QString>> m_data;               // Vector of vectors of data to be displayed
+    State *m_state;                                 // Persistant state information
 };
 
 #endif // TABLEMODEL_H

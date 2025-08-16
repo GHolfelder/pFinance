@@ -275,6 +275,14 @@ QString TableSchema::selectSql() const {
         .arg(columns.join(", "), m_tableName, primaryKey(false), primaryKey(true));
 }
 
+/**
+ * @brief Create Sql statement for selecting a series of rows from table
+ *
+ * All columns of a table will be selected, including the primary key.
+ * A sort column and order needs to be provided.
+ *
+ * @returns QString Sql statement
+ */
 QString TableSchema::selectSql(const QString sortColumn, const Qt::SortOrder sortOrder) const {
     QStringList const columns = columnNames(true);
 

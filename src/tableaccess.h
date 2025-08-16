@@ -6,6 +6,7 @@
 #include <QVariantMap>
 #include <QtQml/qqmlregistration.h>
 #include "base/tablemixin.h"
+#include "databasetables.h"
 
 class TableAccess : public QObject, public TableMixin<TableAccess>
 {
@@ -13,7 +14,7 @@ class TableAccess : public QObject, public TableMixin<TableAccess>
     QML_ELEMENT                                     // This makes the class available for use/instantiation on the QML side.
 
 public:
-    explicit TableAccess(QSqlDatabase db, TableSchema *table, QObject *parent = nullptr);
+    explicit TableAccess(QSqlDatabase db, DatabaseTables *tables, QString tableName,QObject *parent = nullptr);
 
     Q_INVOKABLE int count();
     Q_INVOKABLE bool add(const QVariantMap &data);
