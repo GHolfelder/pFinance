@@ -19,11 +19,10 @@ TableModel::TableModel(QSqlDatabase db, DatabaseTables *tables, QString tableNam
     setObjectName(m_table->tableName() + "TableModel");
     // Initialize state
     m_state = new State(db, tables, objectName(), parent);
-    // Set list of visible columns
-    m_visibleColumns = m_table->columnNames(false);
-    // Get/set default sort order
-    m_sortColumn = m_state->restore("sortColumn", m_table->defaultSort());
-    m_sortOrder = Qt::AscendingOrder;
+    // Get/set default sort column, sort order, visible columns
+    m_sortColumn        = m_state->restoreString("sortColumn", m_table->defaultSort());
+    m_sortOrder         = m_state->restoreSortOrder("sortOrder", Qt::AscendingOrder);
+    m_visibleColumns    = m_state->restoreStringList("visibleColumns", m_table->columnNames(false));
 }
 
 /**
@@ -201,6 +200,7 @@ void TableModel::setVisibleColumns(const QStringList &columns) {
     // On change in list
     if (m_visibleColumns != newColumns) {
         m_visibleColumns = newColumns;
+        m_state->save("visibleColumns", m_visibleColumns);
         emit visibleColumnsChanged();
         // Trigger layout change
         beginResetModel();
@@ -232,8 +232,9 @@ int TableModel::sortBy(const QString sortColumn, const QString &id) {
         m_sortOrder = Qt::AscendingOrder;
     }
 
-    // Persist sort column
-    m_state->save("sortColumn", sortColumn);
+    // Persist sort column and sort order
+    m_state->save("sortColumn", m_sortColumn);
+    m_state->save("sortOrder", m_sortOrder);
     // Notify interface that order has changed
     emit sortOrderChanged();
     return refresh(id);
