@@ -21,15 +21,15 @@ int main(int argc, char *argv[])
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
 
+    // Create data tables
+    DatabaseTables tables(&app);
+
     // Connect and initialize data
     DatabaseManager dbManager(&app);
     if (!dbManager.connect())
         return -1;
-    if (!dbManager.initializeSchema())
+    if (!dbManager.initializeSchema(&tables))
         return -1;
-
-    // Create data tables
-    DatabaseTables tables(&app);
 
     // Set context properties in QML
     TableAccess *vendorAccess = new TableAccess(dbManager.database(), &tables, "Vendors", &app);

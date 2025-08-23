@@ -18,9 +18,12 @@ TableModel::TableModel(QSqlDatabase db, DatabaseTables *tables, QString tableNam
     m_table = tables->fetch(tableName);
     setObjectName(m_table->tableName() + "TableModel");
     // Initialize state
-    m_state = new State(db, tables, parent);
+    m_state = new State(db, tables, objectName(), parent);
     // Set list of visible columns
     m_visibleColumns = m_table->columnNames(false);
+    // Get/set default sort order
+    m_sortColumn = m_state->restore("sortColumn", m_table->defaultSort());
+    m_sortOrder = Qt::AscendingOrder;
 }
 
 /**
@@ -206,15 +209,6 @@ void TableModel::setVisibleColumns(const QStringList &columns) {
 }
 
 /**
- * @brief Get the default sort column.
- *
- * @returns Name of column on which data is to be sorted by default
- */
-QString TableModel::defaultSort() {
-    return m_table->defaultSort();
-}
-
-/**
  * @brief Reload the model in the requested order
  *
  * @param sortColumn Column on which data is to be sorted
@@ -238,6 +232,8 @@ int TableModel::sortBy(const QString sortColumn, const QString &id) {
         m_sortOrder = Qt::AscendingOrder;
     }
 
+    // Persist sort column
+    m_state->save("sortColumn", sortColumn);
     // Notify interface that order has changed
     emit sortOrderChanged();
     return refresh(id);
@@ -261,7 +257,7 @@ int TableModel::refresh(const QString &id) {
     m_data.clear();
 
     // Prepare query
-    query.prepare(m_table->selectSql(m_sortColumn, m_sortOrder));
+    query.prepare(m_table->selectSql({}, m_sortColumn, m_sortOrder));
     if (!query.exec()) {
         fail( "failed query:" + query.lastError().text());
         endResetModel();

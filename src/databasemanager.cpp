@@ -1,4 +1,5 @@
-#include "DatabaseManager.h"
+#include "databasemanager.h"
+#include "base/tableschema.h"
 #include <QSettings>
 #include <QSqlQuery>
 #include <QSqlError>
@@ -56,11 +57,11 @@ bool DatabaseManager::connect() {
  * The database is initialized as follows:
  * 1. Add pgcrypto extension to database. This provides a suite of cryptographic
  *    functions that enhance the security of data stored in the database.
- * 2. Initialize all the datyabase tables
+ * 2. Initialize all the database tables
  *
  * @return True if successful, otherwise false
  */
-bool DatabaseManager::initializeSchema() {
+bool DatabaseManager::initializeSchema(DatabaseTables *schemas) {
     QSqlQuery query;
 
     // Enable extension
@@ -68,38 +69,19 @@ bool DatabaseManager::initializeSchema() {
         return fail("Extension init failed: " + query.lastError().text());
 
     // Initialize tables
-    if (!initializeVendor())    return false;
+    const QVector<TableSchema *> tables = schemas->getTableSchemasVector();
+    for (const TableSchema *table : tables) {
+        QSqlQuery query;
+        const QString tableName(table->tableName());
+        const QString sql(table->createTableSql());
+        qInfo() << "Creating" << tableName;
+        if (!query.exec(sql))
+            return fail(tableName + " table create failed: " + query.lastError().text());
+
+    }
 
     // Finish up
     return success("Database schema initialized.");
-}
-
-/**
- * @brief Initialize vendor table
- *
- * @return True if successful, otherwise false
- */
-bool DatabaseManager::initializeVendor() {
-    QSqlQuery query;
-
-    const QString vendorTable = R"(
-        CREATE TABLE IF NOT EXISTS vendors (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            name TEXT NOT NULL,
-            address1 TEXT,
-            address2 TEXT,
-            city TEXT,
-            state TEXT,
-            postal_code TEXT,
-            phone TEXT,
-            unpaid_balance NUMERIC(12, 2) DEFAULT 0.00
-        )
-    )";
-
-    if (!query.exec(vendorTable))
-        return fail("Vendor table init failed: " + query.lastError().text());
-
-    return true;
 }
 
 /**

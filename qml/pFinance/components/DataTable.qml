@@ -21,16 +21,16 @@ Item {
 
     // When a column is clicked
     onSortRequested: (columnName) => {
-        selectedRow = model.sortBy(columnName, selectedId);
+        selectedRow = model.sortBy(columnName, selectedId)
         sortOrder   = model.sortOrder
         sortColumn  = model.sortColumn
     }
 
     // When component is loaded
     Component.onCompleted: {
-        selectedRow = model.sortBy(model.defaultSort(), selectedId);
         sortOrder   = model.sortOrder
         sortColumn  = model.sortColumn
+        model.refresh(selectedId)
     }
 
     /*

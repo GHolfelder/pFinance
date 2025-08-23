@@ -4,12 +4,31 @@
 #include <QObject>
 #include <QVariantMap>
 
-enum class COLUMNTYPE {
+enum class COLUMNTYPE {                             // Logical column data types
     STRING,
     INT,
     DATE,
     CURRENCY,
     FLOAT
+};
+
+enum class FILTEROPERATOR {                         // Where filter operators
+    EQUALS,
+    NOTEQUALS,
+    LESSTHAN,
+    GREATERTHAN,
+    LESSTHANOREQUAL,
+    GREATERTHANOREQUAL,
+    LIKE,
+    IN,
+    ISNULL,
+    ISNOTNULL
+};
+
+struct FilterCondition {                            // Filter condition structure
+    QString columnName;
+    FILTEROPERATOR op;
+    QVariant value;                                 // Optional, depending on op
 };
 
 struct ColumnDefinition {
@@ -50,10 +69,16 @@ public:
     QString deleteSql() const;
     QString insertSql(const QVariantMap &data) const;
     QString selectSql() const;
-    QString selectSql(const QString sortColumn, const Qt::SortOrder sortOrder) const;
+    QString selectSql(const QList<FilterCondition> &filters) const;
+    QString selectSql(const QList<FilterCondition> &filters, const QString sortColumn, const Qt::SortOrder sortOrder) const;
     QString updateSql(const QVariantMap &data) const;
+    QString updateInsertSql(const QVariantMap &data, const QStringList matchColumns) const;
 
 private:
+    QString formatValue(const QVariant &value, COLUMNTYPE type) const;
+    QString operatorToSql(FILTEROPERATOR op) const;
+    QString whereClause(const QList<FilterCondition> &conditions) const;
+
     QString m_tableName;                            // Table name
     QList<ColumnDefinition> m_columns;              // Column properties
 };

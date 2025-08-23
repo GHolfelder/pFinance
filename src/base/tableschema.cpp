@@ -1,3 +1,4 @@
+#include <QDate>
 #include "tableschema.h"
 
 /**
@@ -279,20 +280,39 @@ QString TableSchema::selectSql() const {
  * @brief Create Sql statement for selecting a series of rows from table
  *
  * All columns of a table will be selected, including the primary key.
- * A sort column and order needs to be provided.
  *
+ * @param filters Filter structure to be applied to select
  * @returns QString Sql statement
  */
-QString TableSchema::selectSql(const QString sortColumn, const Qt::SortOrder sortOrder) const {
+QString TableSchema::selectSql(const QList<FilterCondition> &filters) const {
     QStringList const columns = columnNames(true);
 
     // Return generated statement
-    return QString("SELECT %1 FROM %2 ORDER BY %3 %4")
-        .arg(columns.join(", "), m_tableName, sortColumn, sortOrder == Qt::AscendingOrder ? "ASC" : "DESC");
+    return QString("SELECT %1 FROM %2 %3")
+        .arg(columns.join(", "), m_tableName, whereClause(filters));
 }
 
 /**
- * @brief Create Sql statement for updating a row in the table
+ * @brief Create Sql statement for selecting a series of rows from table
+ *
+ * All columns of a table will be selected, including the primary key.
+ * A sort column and order needs to be provided.
+ *
+ * @param filters Filter structure to be applied to select
+ * @param sortColumn Name of column to be used to sort data
+ * @param sortOrder Sort direction of returned data
+ * @returns QString Sql statement
+ */
+QString TableSchema::selectSql(const QList<FilterCondition> &filters, const QString sortColumn, const Qt::SortOrder sortOrder) const {
+    QStringList const columns = columnNames(true);
+
+    // Return generated statement
+    return QString("SELECT %1 FROM %2 %3 ORDER BY %4 %5")
+        .arg(columns.join(", "), m_tableName, whereClause(filters), sortColumn, sortOrder == Qt::AscendingOrder ? "ASC" : "DESC");
+}
+
+/**
+ * @brief Create Sql statement for updating a row by id in the table
  *
  * At a minimum, there must be the primary key of the row to be updated
  * along with at least one other value for the generated sql to be correct.
@@ -304,6 +324,7 @@ QString TableSchema::selectSql(const QString sortColumn, const Qt::SortOrder sor
 QString TableSchema::updateSql(const QVariantMap &data) const {
     QStringList assignments;
 
+    // Build assignments
     for (const ColumnDefinition &column : m_columns) {
         QString assign = QString("%1 = %2").arg(column.name, ":" + column.name);
         if (!column.isPrimaryKey && data.contains(column.name))
@@ -313,4 +334,143 @@ QString TableSchema::updateSql(const QVariantMap &data) const {
     // Return generated statement
     return QString("UPDATE %1 SET %2 WHERE %3 = %4")
         .arg(m_tableName, assignments.join(", "), primaryKey(false), primaryKey(true));
+}
+
+
+/**
+ * @brief Create Sql statement for updating an existing row or inserting the row if it can't be found
+ *
+ * At a minimum, there must be the primary key for the row to be inserted
+ * along with at least one column to be used to locate the row in the database
+ * and one additional column to be updated for the generated sql to be correct.
+ * Only valid fields will be added to the generated SQL.
+ *
+ * Note: This method will work even if no unique constraint has been assigned
+ *       to the columns used for matching.
+ *
+ * @param data Variant map containing fields and values to be updated
+ * @param matchColumns List of column to be used in locating the row
+ * @returns QString Sql statement
+ */
+QString TableSchema::updateInsertSql(const QVariantMap &data, const QStringList matchColumns) const {
+    QStringList sourceColumns;
+    QStringList sourcePlaceholders;
+    QStringList matches;
+    QStringList assignments;
+
+    // Build list of source columns, placeholders and assignments
+    for (const ColumnDefinition &column : m_columns) {
+        // If valid column
+        if (data.contains(column.name)) {
+            sourceColumns << column.name;
+            sourcePlaceholders << (":" + column.name);
+            // If the column is one that we are matching on
+            if (matchColumns.contains(column.name)) {
+                QString match = QString("%1 = %2").arg(column.name, ":" + column.name);
+                matches << match;
+            // else it'll be a column we update
+            } else if (!column.isPrimaryKey) {
+                QString assign = QString("%1 = %2").arg(column.name, ":" + column.name);
+                assignments << assign;
+            }
+        }
+    }
+
+    // Return generated statement
+    return QString("MERGE INTO %1 AS target"
+        " USING (SELECT %2) AS source"
+        " ON %3"
+        " WHEN MATCHED THEN"
+        " UPDATE SET %4"
+        " WHEN NOT MATCHED THEN"
+        " INSERT (%5)"
+        " VALUES (%6)")
+        .arg(m_tableName,                       // %1 - Name of table
+            sourcePlaceholders.join(", "),      // %2 - List of all source placeholders in the data
+            matches.join(" AND "),              // %3 - List of columns to match on
+            assignments.join(", "),             // %4 - List of columns to be updated
+            sourceColumns.join(", "),           // %5 - List of all source columns in the data
+            sourcePlaceholders.join(", "));     // %6 - List of all source placeholders in the data
+}
+
+/**
+ * @brief Format value for use in a SQL statement
+ *
+ * @param value Value to be used in statement
+ * @param type Type of column
+ * @return String to be used as value in statement
+ */
+QString TableSchema::formatValue(const QVariant &value, COLUMNTYPE type) const {
+    switch (type) {
+    case COLUMNTYPE::STRING:
+    case COLUMNTYPE::CURRENCY:
+        return QString("'%1'").arg(value.toString().replace("'", "''"));
+    case COLUMNTYPE::DATE:
+        return QString("'%1'").arg(value.toDate().toString("yyyy-MM-dd"));
+    case COLUMNTYPE::INT:
+    case COLUMNTYPE::FLOAT:
+        return value.toString();
+    }
+    return "NULL";
+}
+
+/**
+ * @brief Generate where clause to be used in SQL statement
+ *
+ * @param conditions Structure containing where clause to be applied to statement
+ * @return String to be inserted as where clause
+ */
+QString TableSchema::whereClause(const QList<FilterCondition> &conditions) const {
+    QStringList clauses;
+
+    for (const auto &cond : conditions) {
+        auto it = std::find_if(m_columns.begin(), m_columns.end(),
+            [&](const ColumnDefinition &col) { return col.name == cond.columnName; });
+
+        if (it == m_columns.end()) {
+            qWarning() << "Unknown column:" << cond.columnName;
+            continue;
+        }
+
+        const auto &col = *it;
+        const QString opStr = operatorToSql(cond.op);
+
+        if (cond.op == FILTEROPERATOR::ISNULL || cond.op == FILTEROPERATOR::ISNOTNULL) {
+            clauses << QString("%1 %2").arg(col.name, opStr);
+        } else if (cond.op == FILTEROPERATOR::IN && cond.value.canConvert<QVariantList>()) {
+            QStringList values;
+            const QList<QVariant> list = cond.value.toList();
+            for (const auto &v : list) {
+                values << formatValue(v, col.type);
+            }
+            clauses << QString("%1 IN (%2)").arg(col.name, values.join(", "));
+        } else {
+            QString valStr = formatValue(cond.value, col.type);
+            clauses << QString("%1 %2 %3").arg(col.name, opStr, valStr);
+        }
+    }
+
+    return clauses.isEmpty() ? "" : "WHERE " + clauses.join(" AND ");
+}
+
+/**
+ * @brief Convert operator to rtelated SQL syntax
+ *
+ * @param op Operator value
+ * @return String value associated with operator
+ */
+QString TableSchema::operatorToSql(FILTEROPERATOR op) const {
+    switch (op) {
+    case FILTEROPERATOR::EQUALS:                return "=";
+    case FILTEROPERATOR::NOTEQUALS:             return "!=";
+    case FILTEROPERATOR::LESSTHAN:              return "<";
+    case FILTEROPERATOR::GREATERTHAN:           return ">";
+    case FILTEROPERATOR::LESSTHANOREQUAL:       return "<=";
+    case FILTEROPERATOR::GREATERTHANOREQUAL:    return ">=";
+    case FILTEROPERATOR::LIKE:                  return "ILIKE";
+    case FILTEROPERATOR::IN:                    return "IN";
+    case FILTEROPERATOR::ISNULL:                return "IS NULL";
+    case FILTEROPERATOR::ISNOTNULL:             return "IS NOT NULL";
+    }
+    return "";
 }

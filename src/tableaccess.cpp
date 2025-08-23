@@ -1,5 +1,5 @@
 #include "tableaccess.h"
-#include <qsqlquery.h>
+#include <QSqlQuery>
 #include <QSqlError>
 #include <QRandomGenerator>
 #include <QUuid>

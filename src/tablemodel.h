@@ -43,7 +43,6 @@ public:
     QStringList columnTypes() const;
     QStringList visibleColumns() const;
 
-    Q_INVOKABLE QString defaultSort();
     Q_INVOKABLE void setVisibleColumns(const QStringList &columns);
     Q_INVOKABLE int sortBy(const QString sortColumn, const QString &id);
     Q_INVOKABLE int refresh(const QString &id);

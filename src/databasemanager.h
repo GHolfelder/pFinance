@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QSqlDatabase>
+#include "databasetables.h"
 
 class DatabaseManager : public QObject {
     Q_OBJECT
@@ -13,7 +14,7 @@ public:
     explicit DatabaseManager(QObject *parent = nullptr);
 
     bool connect();
-    bool initializeSchema();
+    bool initializeSchema(DatabaseTables *schemas);
 
     QSqlDatabase database() const;
     QString error() const;
@@ -23,8 +24,6 @@ signals:
     void operationFailed(const QString &error);
 
 private:
-    bool initializeVendor();
-
     bool fail(QString error);
     bool success(QString message);
 };

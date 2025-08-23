@@ -17,7 +17,30 @@ DatabaseTables::DatabaseTables(QObject *parent) : QObject{parent} {
     m_tables.insert(state->tableName(), state);
 }
 
+/**
+ * @brief Fetch requested table schema
+ *
+ * @param tableName Name of table to be fetched
+ * @returns Nullptr or address of table schema object
+ */
 TableSchema* DatabaseTables::fetch(const QString &tableName) const {
     auto it = m_tables.find(tableName);
     return (it != m_tables.end()) ? it.value() : nullptr;
+}
+
+/**
+ * @brief Return QVector of tables in the database
+ *
+ * @returns QVector of table schema pointers
+ */
+QVector<TableSchema *> DatabaseTables::getTableSchemasVector() const {
+    QVector<TableSchema*> tableSchemas;
+
+    tableSchemas.reserve(m_tables.size());
+
+    for (auto it = m_tables.begin(); it != m_tables.end(); ++it) {
+        tableSchemas.append(it.value());
+    }
+
+    return tableSchemas;
 }

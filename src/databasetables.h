@@ -18,6 +18,7 @@ public:
     explicit DatabaseTables(QObject *parent = nullptr);
 
     TableSchema* fetch(const QString &tableName) const;
+    QVector<TableSchema*> getTableSchemasVector() const;
 };
 
 #endif // DATABASETABLES_H
