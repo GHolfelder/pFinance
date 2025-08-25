@@ -46,19 +46,19 @@ QVariantMap TableSchema::initialize() {
 
     for (auto it = m_columns.constBegin(); it != m_columns.constEnd(); ++it) {
         if (!it->isPrimaryKey) switch (it->type) {
-            case COLUMNTYPE::STRING:
+            case ColumnType::String:
                 result[it->name] = it->defaultValue.isEmpty() ? "" : it->defaultValue;
                 break;
-            case COLUMNTYPE::INT:
+            case ColumnType::Int:
                 result[it->name] = it->defaultValue.isEmpty() ? 0 : it->defaultValue.toInt();
                 break;
-            case COLUMNTYPE::DATE:
+            case ColumnType::Date:
                 result[it->name] = it->defaultValue.isEmpty() ? 0 : it->defaultValue.toInt();
                 break;
-            case COLUMNTYPE::CURRENCY:
+            case ColumnType::Currency:
                 result[it->name] = it->defaultValue.isEmpty() ? 0.0 : it->defaultValue.toFloat();
                 break;
-            case COLUMNTYPE::FLOAT:
+            case ColumnType::Float:
                 result[it->name] = it->defaultValue.isEmpty() ? 0.0 : it->defaultValue.toFloat();
                 break;
         }
@@ -134,11 +134,11 @@ QStringList TableSchema::columnTypes(bool includePrimary) const {
     QStringList types;
     for (const ColumnDefinition &column : m_columns) {
         if (includePrimary || !column.isPrimaryKey) switch (column.type) {
-            case COLUMNTYPE::STRING:   types << "STRING"; break;
-            case COLUMNTYPE::INT:      types << "INT"; break;
-            case COLUMNTYPE::DATE:     types << "DATE"; break;
-            case COLUMNTYPE::CURRENCY: types << "CURRENCY"; break;
-            case COLUMNTYPE::FLOAT:    types << "FLOAT"; break;
+            case ColumnType::String:   types << "STRING"; break;
+            case ColumnType::Int:      types << "INT"; break;
+            case ColumnType::Date:     types << "DATE"; break;
+            case ColumnType::Currency: types << "CURRENCY"; break;
+            case ColumnType::Float:    types << "FLOAT"; break;
         }
     }
     return types;
@@ -400,15 +400,15 @@ QString TableSchema::updateInsertSql(const QVariantMap &data, const QStringList 
  * @param type Type of column
  * @return String to be used as value in statement
  */
-QString TableSchema::formatValue(const QVariant &value, COLUMNTYPE type) const {
+QString TableSchema::formatValue(const QVariant &value, ColumnType type) const {
     switch (type) {
-    case COLUMNTYPE::STRING:
-    case COLUMNTYPE::CURRENCY:
+    case ColumnType::String:
+    case ColumnType::Currency:
         return QString("'%1'").arg(value.toString().replace("'", "''"));
-    case COLUMNTYPE::DATE:
+    case ColumnType::Date:
         return QString("'%1'").arg(value.toDate().toString("yyyy-MM-dd"));
-    case COLUMNTYPE::INT:
-    case COLUMNTYPE::FLOAT:
+    case ColumnType::Int:
+    case ColumnType::Float:
         return value.toString();
     }
     return "NULL";
@@ -435,9 +435,9 @@ QString TableSchema::whereClause(const QList<FilterCondition> &conditions) const
         const auto &col = *it;
         const QString opStr = operatorToSql(cond.op);
 
-        if (cond.op == FILTEROPERATOR::ISNULL || cond.op == FILTEROPERATOR::ISNOTNULL) {
+        if (cond.op == FilterOperator::IsNull || cond.op == FilterOperator::IsNotNull) {
             clauses << QString("%1 %2").arg(col.name, opStr);
-        } else if (cond.op == FILTEROPERATOR::IN && cond.value.canConvert<QVariantList>()) {
+        } else if (cond.op == FilterOperator::In && cond.value.canConvert<QVariantList>()) {
             QStringList values;
             const QList<QVariant> list = cond.value.toList();
             for (const auto &v : list) {
@@ -459,18 +459,18 @@ QString TableSchema::whereClause(const QList<FilterCondition> &conditions) const
  * @param op Operator value
  * @return String value associated with operator
  */
-QString TableSchema::operatorToSql(FILTEROPERATOR op) const {
+QString TableSchema::operatorToSql(FilterOperator op) const {
     switch (op) {
-    case FILTEROPERATOR::EQUALS:                return "=";
-    case FILTEROPERATOR::NOTEQUALS:             return "!=";
-    case FILTEROPERATOR::LESSTHAN:              return "<";
-    case FILTEROPERATOR::GREATERTHAN:           return ">";
-    case FILTEROPERATOR::LESSTHANOREQUAL:       return "<=";
-    case FILTEROPERATOR::GREATERTHANOREQUAL:    return ">=";
-    case FILTEROPERATOR::LIKE:                  return "ILIKE";
-    case FILTEROPERATOR::IN:                    return "IN";
-    case FILTEROPERATOR::ISNULL:                return "IS NULL";
-    case FILTEROPERATOR::ISNOTNULL:             return "IS NOT NULL";
+    case FilterOperator::Equals:                return "=";
+    case FilterOperator::NotEquals:             return "!=";
+    case FilterOperator::LessThan:              return "<";
+    case FilterOperator::GreaterThan:           return ">";
+    case FilterOperator::LessThanOrEqual:       return "<=";
+    case FilterOperator::GreaterThanOrEqual:    return ">=";
+    case FilterOperator::Like:                  return "ILIKE";
+    case FilterOperator::In:                    return "IN";
+    case FilterOperator::IsNull:                return "IS NULL";
+    case FilterOperator::IsNotNull:             return "IS NOT NULL";
     }
     return "";
 }

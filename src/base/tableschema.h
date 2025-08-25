@@ -4,37 +4,37 @@
 #include <QObject>
 #include <QVariantMap>
 
-enum class COLUMNTYPE {                             // Logical column data types
-    STRING,
-    INT,
-    DATE,
-    CURRENCY,
-    FLOAT
+enum class ColumnType {                             // Logical column data types
+    String,
+    Int,
+    Date,
+    Currency,
+    Float
 };
 
-enum class FILTEROPERATOR {                         // Where filter operators
-    EQUALS,
-    NOTEQUALS,
-    LESSTHAN,
-    GREATERTHAN,
-    LESSTHANOREQUAL,
-    GREATERTHANOREQUAL,
-    LIKE,
-    IN,
-    ISNULL,
-    ISNOTNULL
+enum class FilterOperator {                         // Where filter operators
+    Equals,
+    NotEquals,
+    LessThan,
+    GreaterThan,
+    LessThanOrEqual,
+    GreaterThanOrEqual,
+    Like,
+    In,
+    IsNull,
+    IsNotNull
 };
 
 struct FilterCondition {                            // Filter condition structure
     QString columnName;
-    FILTEROPERATOR op;
+    FilterOperator op;
     QVariant value;                                 // Optional, depending on op
 };
 
 struct ColumnDefinition {
     QString name;                                   // Internal name
     QString title;                                  // Display title
-    COLUMNTYPE type;                                // Logical data type (e.g. COLUMNTYPE:STRING, COLUMNTYPE:INT)
+    ColumnType type;                                // Logical data type (e.g. ColumnType:STRING, ColumnType:INT)
     QString sqlType;                                // PostgreSQL type (e.g. "UUID", "VARCHAR(100)", "INTEGER")
     bool isPrimaryKey = false;                      // True if this is the primary key
     bool isAutoIncrement = false;                   // True if this is an auto increment value
@@ -75,8 +75,8 @@ public:
     QString updateInsertSql(const QVariantMap &data, const QStringList matchColumns) const;
 
 private:
-    QString formatValue(const QVariant &value, COLUMNTYPE type) const;
-    QString operatorToSql(FILTEROPERATOR op) const;
+    QString formatValue(const QVariant &value, ColumnType type) const;
+    QString operatorToSql(FilterOperator op) const;
     QString whereClause(const QList<FilterCondition> &conditions) const;
 
     QString m_tableName;                            // Table name

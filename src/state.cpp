@@ -103,8 +103,8 @@ QString State::restoreValue(const QString propertyName) {
 
     // Variables needed for getting value from database
     const QString sql = m_table->selectSql({
-        { "object",         FILTEROPERATOR::EQUALS, m_object},
-        { "property_name",  FILTEROPERATOR::EQUALS, propertyName}
+        { "object",         FilterOperator::Equals, m_object},
+        { "property_name",  FilterOperator::Equals, propertyName}
     });
 
     // Retrieve record from database
