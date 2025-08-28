@@ -134,11 +134,11 @@ QStringList TableSchema::columnTypes(bool includePrimary) const {
     QStringList types;
     for (const ColumnDefinition &column : m_columns) {
         if (includePrimary || !column.isPrimaryKey) switch (column.type) {
-            case ColumnType::String:   types << "STRING"; break;
-            case ColumnType::Int:      types << "INT"; break;
-            case ColumnType::Date:     types << "DATE"; break;
+            case ColumnType::String:   types << "STRING";   break;
+            case ColumnType::Int:      types << "INT";      break;
+            case ColumnType::Date:     types << "DATE";     break;
             case ColumnType::Currency: types << "CURRENCY"; break;
-            case ColumnType::Float:    types << "FLOAT"; break;
+            case ColumnType::Float:    types << "FLOAT";    break;
         }
     }
     return types;
@@ -187,7 +187,7 @@ QString TableSchema::toName(const QString placeholder) const {
 }
 
 /**
- * @brief Create Sql statement for getting count of recors in table
+ * @brief Create Sql statement for getting count of records in table
  *
  * @returns QString Sql statement
  */
@@ -196,7 +196,62 @@ QString TableSchema::countSql() const {
 }
 
 /**
+ * @brief Create Sql statement for any column constraints
+ *
+ * Note: A case insensitive compare is used to verify that the constraint
+ *       does not yet exist.
+ *
+ * @returns QString Sql statement
+ */
+QString TableSchema::createColumnConstraintSql() const {
+    QStringList statements;
+
+    // For each column
+    for (const auto &col : m_columns) {
+        if (col.type != ColumnType::Int || !col.constraint)
+            continue;
+
+        if (col.constraint->type != ConstraintType::EnumSet)
+            continue;
+
+        // Cast to underlying class and verify list is not empty
+        auto enumConstraint = std::static_pointer_cast<EnumConstraint>(col.constraint);
+        const QList<int> allowed = enumConstraint->allowedValues();
+        if (allowed.isEmpty())
+            continue;
+
+        // Create arguments for generated SQL
+        QString constraintName = QString("chk_%1_%2").arg(m_tableName, col.name);
+        QStringList stringified;
+        for (int val : allowed)
+            stringified << QString::number(val);
+        QString allowedList = stringified.join(", ");
+
+        QString ddl = QString(R"(
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname ILIKE '%1'
+    ) THEN
+        ALTER TABLE %2
+        ADD CONSTRAINT %1
+        CHECK (%3 IN (%4));
+    END IF;
+END
+$$;
+)").arg(constraintName,
+    m_tableName,
+    col.name,
+    allowedList);
+    statements << ddl.trimmed();
+    }
+    return statements.join("\n\n");
+}
+
+/**
  * @brief Create Sql statement for creating table in database
+ *
  * @returns QString Sql statement
  */
 QString TableSchema::createTableSql() const {
@@ -391,6 +446,22 @@ QString TableSchema::updateInsertSql(const QVariantMap &data, const QStringList 
             assignments.join(", "),             // %4 - List of columns to be updated
             sourceColumns.join(", "),           // %5 - List of all source columns in the data
             sourcePlaceholders.join(", "));     // %6 - List of all source placeholders in the data
+}
+
+/**
+ * @brief Retrieve enumerated constraint for column
+ *
+ * @param columnName Name of column containing constraint
+ * @returns Pointer to contraint function or null pointer if not found
+ */
+std::shared_ptr<EnumConstraint> TableSchema::enumConstraint(const QString &columnName) const {
+    for (const auto &col : m_columns) {
+        if (col.name == columnName && col.constraint &&
+            col.constraint->type == ConstraintType::EnumSet) {
+            return std::static_pointer_cast<EnumConstraint>(col.constraint);
+        }
+    }
+    return nullptr;
 }
 
 /**

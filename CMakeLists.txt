@@ -14,12 +14,14 @@ find_package(Qt6 REQUIRED COMPONENTS
     QuickControls2
     Sql
 )
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
 qt_standard_project_setup()
 
 # ✅ Define sources
 set(SOURCES
     src/base/tableschema.cpp
+    src/tables/categorytable.cpp
     src/tables/statetable.cpp
     src/tables/vendortable.cpp
     src/main.cpp
@@ -31,8 +33,10 @@ set(SOURCES
 )
 
 set(HEADERS
+    src/base/columnconstraint.h
     src/base/tablemixin.h
     src/base/tableschema.h
+    src/tables/categorytable.h
     src/tables/statetable.h
     src/tables/vendortable.h
     src/databasemanager.h
@@ -48,6 +52,8 @@ qt_add_executable(${PROJECT_NAME}
     ${HEADERS}
 )
 
+
+target_link_libraries(pFinance PRIVATE Qt6::Core)
 # ✅ Link Qt modules
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Core

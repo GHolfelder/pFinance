@@ -76,8 +76,17 @@ bool DatabaseManager::initializeSchema(DatabaseTables *schemas) {
         const QString sql(table->createTableSql());
         qInfo() << "Creating" << tableName;
         if (!query.exec(sql))
-            return fail(tableName + " table create failed: " + query.lastError().text());
+            return fail(tableName + " create table failed: " + query.lastError().text());
+    }
 
+    // Initialize column constraints
+    for (const TableSchema *table : tables) {
+        QSqlQuery query;
+        const QString tableName(table->tableName());
+        const QString sql(table->createColumnConstraintSql());
+        qInfo() << "Column constraint" << tableName;
+        if (!sql.isEmpty() && !query.exec(sql))
+            return fail(tableName + " create constraint failed: " + query.lastError().text());
     }
 
     // Finish up

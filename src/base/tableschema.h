@@ -3,14 +3,7 @@
 
 #include <QObject>
 #include <QVariantMap>
-
-enum class ColumnType {                             // Logical column data types
-    String,
-    Int,
-    Date,
-    Currency,
-    Float
-};
+#include "columnconstraint.h"
 
 enum class FilterOperator {                         // Where filter operators
     Equals,
@@ -23,6 +16,14 @@ enum class FilterOperator {                         // Where filter operators
     In,
     IsNull,
     IsNotNull
+};
+
+enum class ColumnType {                             // Logical column data types
+    String,
+    Int,
+    Date,
+    Currency,
+    Float
 };
 
 struct FilterCondition {                            // Filter condition structure
@@ -41,6 +42,7 @@ struct ColumnDefinition {
     bool isNullable = true;                         // True if column is nullable
     QString defaultValue;                           // Optional default value for column
     std::function<QString(QVariant)> render;        // Optional formatter for query or display
+    std::shared_ptr<ColumnConstraint> constraint;   // Optional constraint
 };
 
 class TableSchema : public QObject
@@ -55,6 +57,7 @@ public:
 
     QVariantMap initialize();
 
+    // Table properties
     int columnCount() const;
     QStringList columnNames(bool includePrimary = true) const;
     QStringList columnPlaceholders(bool includePrimary = true) const;
@@ -64,7 +67,9 @@ public:
     QString primaryKey(bool placeholder = false) const;
     QString toName(const QString placeholder) const;
 
+    // Generate Sql
     QString countSql() const;
+    QString createColumnConstraintSql() const;
     QString createTableSql() const;
     QString deleteSql() const;
     QString insertSql(const QVariantMap &data) const;
@@ -73,6 +78,9 @@ public:
     QString selectSql(const QList<FilterCondition> &filters, const QString sortColumn, const Qt::SortOrder sortOrder) const;
     QString updateSql(const QVariantMap &data) const;
     QString updateInsertSql(const QVariantMap &data, const QStringList matchColumns) const;
+
+    // Constraints
+    std::shared_ptr<EnumConstraint> enumConstraint(const QString &columnName) const;
 
 private:
     QString formatValue(const QVariant &value, ColumnType type) const;

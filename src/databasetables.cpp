@@ -1,4 +1,5 @@
 #include "databasetables.h"
+#include "tables/categorytable.h"
 #include "tables/vendortable.h"
 #include "tables/statetable.h"
 
@@ -11,6 +12,8 @@
  * @param parent Reference to parent class.
  */
 DatabaseTables::DatabaseTables(QObject *parent) : QObject{parent} {
+    CategoryTable *category = new CategoryTable(this);
+    m_tables.insert(category->tableName(), category);
     VendorTable *vendor = new VendorTable(this);
     m_tables.insert(vendor->tableName(), vendor);
     StateTable *state = new StateTable(this);
