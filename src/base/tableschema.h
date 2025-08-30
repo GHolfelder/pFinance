@@ -63,6 +63,7 @@ public:
     QStringList columnPlaceholders(bool includePrimary = true) const;
     QStringList columnTitles(bool includePrimary = true) const;
     QStringList columnTypes(bool includePrimary = true) const;
+    QVariantMap columnValues(const QString &columnName) const;
     QString defaultSort() const;
     QString primaryKey(bool placeholder = false) const;
     QString toName(const QString placeholder) const;
@@ -75,14 +76,16 @@ public:
     QString insertSql(const QVariantMap &data) const;
     QString selectSql() const;
     QString selectSql(const QList<FilterCondition> &filters) const;
-    QString selectSql(const QList<FilterCondition> &filters, const QString sortColumn, const Qt::SortOrder sortOrder) const;
+    QString selectSql(const QList<FilterCondition> &filters, const QString &sortColumn, const Qt::SortOrder sortOrder) const;
     QString updateSql(const QVariantMap &data) const;
     QString updateInsertSql(const QVariantMap &data, const QStringList matchColumns) const;
 
+
+private:
     // Constraints
     std::shared_ptr<EnumConstraint> enumConstraint(const QString &columnName) const;
 
-private:
+    // Utlity methods
     QString formatValue(const QVariant &value, ColumnType type) const;
     QString operatorToSql(FilterOperator op) const;
     QString whereClause(const QList<FilterCondition> &conditions) const;

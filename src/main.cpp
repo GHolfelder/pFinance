@@ -32,10 +32,14 @@ int main(int argc, char *argv[])
         return -1;
 
     // Set context properties in QML
+    TableAccess *categoryAccess = new TableAccess(dbManager.database(), &tables, "Categories", &app);
+    TableModel *categoryModel = new TableModel(dbManager.database(), &tables, "Categories", &app);
     TableAccess *vendorAccess = new TableAccess(dbManager.database(), &tables, "Vendors", &app);
     TableModel *vendorModel = new TableModel(dbManager.database(), &tables, "Vendors", &app);
     engine.rootContext()->setContextProperty("vendorAccess", vendorAccess);
     engine.rootContext()->setContextProperty("vendorModel", vendorModel);
+    engine.rootContext()->setContextProperty("categoryAccess", categoryAccess);
+    engine.rootContext()->setContextProperty("categoryModel", categoryModel);
 
     // Load main application window
     engine.addImportPath("qml");

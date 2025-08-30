@@ -72,6 +72,16 @@ bool TableAccess::add(const QVariantMap &data) {
 }
 
 /**
+ * @brief Retrieve the valid enumerated list of values and their labels for a column
+ *
+ * @param columnName Name of column that has enumerate values
+ * @returns QVariant map of values and labels or an empty list if column not valid
+ */
+QVariantMap TableAccess::columnValues(const QString &columnName) {
+    return m_table->columnValues(columnName);
+}
+
+/**
  * @brief Retrieve row from database
  *
  * The caller is responsible for clearing the variant map if desired. When an empty

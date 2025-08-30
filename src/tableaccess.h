@@ -18,6 +18,7 @@ public:
 
     Q_INVOKABLE int count();
     Q_INVOKABLE bool add(const QVariantMap &data);
+    Q_INVOKABLE QVariantMap columnValues(const QString &columnName);
     Q_INVOKABLE QVariantMap get(const QString &id);
     Q_INVOKABLE bool update(const QString &id, const QVariantMap &data);
     Q_INVOKABLE bool remove(const QString &id);

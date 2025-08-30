@@ -4,9 +4,9 @@ import QtQuick.Layouts
 import "components"
 
 Item {
-    id: vendorForm
+    id: categoryForm
 
-    property var vendorData: ({})           // Holds QVariantMap with editable values
+    property var categoryData: ({})         // Holds QVariantMap with editable values
     property string editId: ""              // Id of record to be edited
     property string lastId: ""              // Id of last record added or edited
     property bool isLoading: true           // True when form is being loaded, otherwise false
@@ -20,7 +20,7 @@ Item {
     // After form is open
     Component.onCompleted: {
         isLoading = true
-        vendorData = vendorAccess.get(editId)
+        categoryData = categoryAccess.get(editId)
     }
 
     Toast {
@@ -36,7 +36,7 @@ Item {
         spacing: 10
 
         Label {
-            text: editId === "" ? "➕ Add Vendor" : "✏️ Changing Vendor"
+            text: editId === "" ? "➕ Add Category" : "✏️ Changing Category"
             font.bold: true
             font.pointSize: 18
         }
@@ -57,9 +57,9 @@ Item {
                     width: 150
                     onClicked: {
                         if (editId == "")
-                            vendorAccess.add(vendorData)
+                            categoryAccess.add(categoryData)
                         else
-                            vendorAccess.update(editId, vendorData)
+                            categoryAccess.update(editId, categoryData)
                     }
                 }
                 Button {
@@ -80,7 +80,7 @@ Item {
 
         // Connect to signals from access class
         Connections {
-            target: vendorAccess
+            target: categoryAccess
 
             function onOperationSuccess (id) {
                 if (isLoading) {
@@ -88,14 +88,14 @@ Item {
                 } else {
                     lastId = id
                     if (editId === "") {
-                        toast.show("✅ Vendor added successfully")
+                        toast.show("✅ Category added successfully")
                         isLoading = true            // Start loading process
                         editId = ""                 // Ensure we're in 'add' mode
-                        vendorData = vendorAccess.get(editId)
+                        categoryData = categoryAccess.get(editId)
                     } else {
                         formClosed(lastId)
                     }
-                    formSaved(vendorData)
+                    formSaved(categoryData)
                 }
             }
 
@@ -119,59 +119,70 @@ Item {
 
             RowLayout {
                 Label {
-                    text: qsTr("Vendor name")
+                    text: qsTr("Category name")
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
                 TextField {
-                    text: vendorData.name
+                    text: categoryData.name
                     Layout.preferredWidth: layoutParent.textWidth
-                    onTextChanged: vendorData.name = text
+                    onTextChanged: categoryData.name = text
                     focus: true
                 }
             }
             RowLayout {
                 Label {
-                    text: qsTr("Address 1")
+                    text: qsTr("Description")
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
-                TextField {
-                    text: vendorData.address1
+                ScrollView {
                     Layout.preferredWidth: layoutParent.textWidth
-                    onTextChanged: vendorData.address1 = text
+                    Layout.preferredHeight: 150
+
+                    TextArea {
+                        text: categoryData.description
+                        wrapMode: TextArea.Wrap
+                        onTextChanged: categoryData.description = text
+                    }
                 }
             }
             RowLayout {
                 Label {
-                    text: qsTr("Address 2")
+                    text: qsTr("Type")
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
-                TextField {
-                    text: vendorData.address2
+
+                ComboBox {
+                    id: typeCombo
                     Layout.preferredWidth: layoutParent.textWidth
-                    onTextChanged: vendorData.address2 = text
-                }
-            }
-            RowLayout {
-                Label {
-                    text: qsTr("City, state and postal code")
-                    Layout.preferredWidth: layoutParent.labelWidth
-                }
-                TextField {
-                    text: vendorData.city
-                    Layout.preferredWidth: (layoutParent.textWidth - 20) / 3
-                    onTextChanged: vendorData.city = text
-                }
-                TextField {
-                    text: vendorData.state
-                    Layout.preferredWidth: (layoutParent.textWidth - 20) / 3
-                    Layout.leftMargin: 5
-                    onTextChanged: vendorData.state = text
-                }
-                TextField {
-                    text: vendorData.postal_code
-                    Layout.preferredWidth: (layoutParent.textWidth - 20) / 3
-                    Layout.leftMargin: 5
-                    onTextChanged: vendorData.postal_code = text
+
+                    model: ListModel {
+                        id: typeModel
+                    }
+
+                    textRole: "label"
+                    valueRole: "value"
+
+                    Component.onCompleted: {
+                        const map = categoryAccess.columnValues("type");
+                        for (const key in map) {
+                            typeModel.append({
+                                value: parseInt(key),
+                                label: map[key]
+                            });
+                        }
+
+                        // Set initial selection
+                        for (let i = 0; i < typeModel.count; ++i) {
+                            if (typeModel.get(i).value === categoryData.type) {
+                                typeCombo.currentIndex = i;
+                                break;
+                            }
+                        }
+                    }
+
+                    onCurrentIndexChanged: {
+                        categoryData.type = typeModel.get(currentIndex).value;
+                    }
                 }
             }
         }

@@ -58,6 +58,14 @@ ApplicationWindow {
                 }
             }
             ItemDelegate {
+                text: "🧮 Categories"
+                onClicked: {
+                    stackView.clear()
+                    stackView.push(Qt.resolvedUrl("CategoryBrowse.qml"))
+                    drawer.close()
+                }
+            }
+            ItemDelegate {
                 text: "🧮 Vendors"
                 onClicked: {
                     stackView.clear()

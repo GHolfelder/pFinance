@@ -145,6 +145,23 @@ QStringList TableSchema::columnTypes(bool includePrimary) const {
 }
 
 /**
+ * @brief Column values getter
+ *
+ * This method returns a QVariantMap of enumerated integer values and their corresponding label.
+ * This in turn can be used for validating values entered by the users.
+ *
+ * @param columnName Name of column whose values are to be retrieved
+ * @returns QVariant map of values and labels or an empty list
+ */
+QVariantMap TableSchema::columnValues(const QString &columnName) const {
+    QVariantMap emptyList;
+    std::shared_ptr<EnumConstraint> values = enumConstraint(columnName);
+    if (values)
+        return values->values();
+    return emptyList;
+}
+
+/**
  * @brief Get default sort columns
  *
  * The first field tyhat is not a primary key will always be
@@ -358,7 +375,7 @@ QString TableSchema::selectSql(const QList<FilterCondition> &filters) const {
  * @param sortOrder Sort direction of returned data
  * @returns QString Sql statement
  */
-QString TableSchema::selectSql(const QList<FilterCondition> &filters, const QString sortColumn, const Qt::SortOrder sortOrder) const {
+QString TableSchema::selectSql(const QList<FilterCondition> &filters, const QString &sortColumn, const Qt::SortOrder sortOrder) const {
     QStringList const columns = columnNames(true);
 
     // Return generated statement
