@@ -150,39 +150,13 @@ Item {
                     text: qsTr("Type")
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
+                SchemaComboBox {
+                    columnName: "type"
+                    accessObject: categoryAccess
+                    selectedValue: categoryData.type
+                    preferredWidth: layoutParent.textWidth
 
-                ComboBox {
-                    id: typeCombo
-                    Layout.preferredWidth: layoutParent.textWidth
-
-                    model: ListModel {
-                        id: typeModel
-                    }
-
-                    textRole: "label"
-                    valueRole: "value"
-
-                    Component.onCompleted: {
-                        const map = categoryAccess.columnValues("type");
-                        for (const key in map) {
-                            typeModel.append({
-                                value: parseInt(key),
-                                label: map[key]
-                            });
-                        }
-
-                        // Set initial selection
-                        for (let i = 0; i < typeModel.count; ++i) {
-                            if (typeModel.get(i).value === categoryData.type) {
-                                typeCombo.currentIndex = i;
-                                break;
-                            }
-                        }
-                    }
-
-                    onCurrentIndexChanged: {
-                        categoryData.type = typeModel.get(currentIndex).value;
-                    }
+                    onSelectedValueChanged: categoryData.type = selectedValue
                 }
             }
         }
