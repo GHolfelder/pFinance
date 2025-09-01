@@ -22,7 +22,17 @@ TableModel::TableModel(QSqlDatabase db, DatabaseTables *tables, QString tableNam
     // Get/set default sort column, sort order, visible columns
     m_sortColumn        = m_state->restoreString("sortColumn", m_table->defaultSort());
     m_sortOrder         = m_state->restoreSortOrder("sortOrder", Qt::AscendingOrder);
-    m_visibleColumns    = m_state->restoreStringList("visibleColumns", m_table->columnNames(false));
+    m_visibleColumns    = m_state->restoreStringList("visibleColumns", m_table->columnNames(false, ColumnLabels::Label));
+    // Verify that the properties are still correct in case there's been a database change
+    if (!m_table->isColumnListValid(m_visibleColumns, true)) {
+        qInfo() << (m_table->tableName() + " visible columns were invalid and reset");
+        m_visibleColumns = m_table->columnNames(false, ColumnLabels::Label);
+    }
+    if (!m_table->isColumnValid(m_sortColumn, true)) {
+        qInfo() << (m_table->tableName() + " sorted column was invalid and reset");
+        m_sortColumn = m_table->defaultSort();
+        m_sortOrder = Qt::AscendingOrder;
+    }
 }
 
 /**
@@ -47,7 +57,7 @@ QVariant TableModel::data(const QModelIndex &index, int role) const {
     case ColumnRole:
         return index.column();
     case IdRole:
-        return m_data.at(index.row()).at(m_table->columnNames(true).indexOf(m_table->primaryKey()));
+        return m_data.at(index.row()).at(m_table->columnNames(true, ColumnLabels::Label).indexOf(m_table->primaryKey()));
     default:
         break;
     }
@@ -148,21 +158,21 @@ QString TableModel::sortColumn() {
 }
 
 /**
- * @brief Get list of column names
+ * @brief Get list of all column names
  *
  * @returns List of column names
  */
 QStringList TableModel::columnNames() const {
-    return m_table->columnNames();
+    return m_table->columnNames(true, ColumnLabels::Label);
 }
 
 /**
- * @brief Get list of column titles
+ * @brief Get list of all column titles
  *
  * @returns List of column titles
  */
 QStringList TableModel::columnTitles() const {
-    return m_table->columnTitles();
+    return m_table->columnTitles(true);
 }
 
 /**
@@ -189,7 +199,7 @@ QStringList TableModel::visibleColumns() const {
  * @param columns List of visible column names
  */
 void TableModel::setVisibleColumns(const QStringList &columns) {
-    const QStringList allColumns = m_table->columnNames(true);
+    const QStringList allColumns = m_table->columnNames(true, ColumnLabels::Label);
     QStringList newColumns;
 
     // Validate and transfer columns to new column list
@@ -216,15 +226,15 @@ void TableModel::setVisibleColumns(const QStringList &columns) {
  * @returns Index to found record or -1 if not found
  */
 int TableModel::sortBy(const QString sortColumn, const QString &id) {
-    const QStringList columnNames = m_table->columnNames();
+    const QStringList allColumns = m_table->columnNames(true, ColumnLabels::Label);
 
     // Toggle sort order if same column selected
     if (sortColumn != "" && sortColumn == m_sortColumn)
         m_sortOrder = (m_sortOrder == Qt::AscendingOrder) ? Qt::DescendingOrder : Qt::AscendingOrder;
     else {
         // Validate sort order
-        if (!columnNames.contains(sortColumn)) {
-            m_sortColumn = columnNames.at(0);
+        if (!allColumns.contains(sortColumn)) {
+            m_sortColumn = allColumns.at(0);
             qWarning() << "Unknown column used for sort order:" << sortColumn;
         } else
             m_sortColumn = sortColumn;
@@ -247,7 +257,7 @@ int TableModel::sortBy(const QString sortColumn, const QString &id) {
  * @returns Index to found record or -1 if not found
  */
 int TableModel::refresh(const QString &id) {
-    const QStringList columnNames = m_table->columnNames(true);
+    const QStringList allColumns = m_table->columnNames(true, ColumnLabels::Label);
     const QString pKey = m_table->primaryKey();
     QSqlQuery query(m_db);
     int foundIdx = -1;
@@ -258,8 +268,10 @@ int TableModel::refresh(const QString &id) {
     m_data.clear();
 
     // Prepare query
-    query.prepare(m_table->selectSql({}, m_sortColumn, m_sortOrder));
+    const QString sql = m_table->selectSql({}, m_sortColumn, m_sortOrder, true);
+    query.prepare(sql);
     if (!query.exec()) {
+        qDebug() << sql;
         fail( "failed query:" + query.lastError().text());
         endResetModel();
         return foundIdx;
@@ -269,7 +281,7 @@ int TableModel::refresh(const QString &id) {
     while (query.next()) {
         QList<QString> v;
         index += 1;
-        for (const QString &name : columnNames) {
+        for (const QString &name : allColumns) {
             if (name == pKey && query.value(name) == id) {
                 foundIdx = index;
             }
@@ -295,7 +307,7 @@ int TableModel::refresh(const QString &id) {
 int TableModel::columnToIndex(const int column) const {
     if (column < m_visibleColumns.size()) {
         QString columnName = m_visibleColumns.at(column);
-        return m_table->columnNames().indexOf(columnName);
+        return m_table->columnNames(true, ColumnLabels::Label).indexOf(columnName);
     }
     return -1;
 }

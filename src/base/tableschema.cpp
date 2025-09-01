@@ -78,14 +78,37 @@ int TableSchema::columnCount() const {
 /**
  * @brief Column names getter
  *
+ * Use the label option to indicate how columns with constraints are to be handled
+ *  * False indicates that no special processing is associated with constraint columns
+ *  * Label indicates that "_label" is to be added to the column name of any column with a column constraint
+ *  * Expression adds a SQL expression converting the column constraint to a label as well as appending "_label" to the column name
+ *
  * @param includePrimary When true, primary field is included, otherwise the primary key will not be in the result set.
+ * @param labelOption Indicates how columns with constraints are to be handled
  * @returns QString list of column names
  */
-QStringList TableSchema::columnNames(bool includePrimary) const {
+QStringList TableSchema::columnNames(bool includePrimary, ColumnLabels labelOption) const {
     QStringList names;
     for (const ColumnDefinition &column : m_columns) {
-        if (includePrimary || !column.isPrimaryKey)
-            names << column.name;
+        if (includePrimary || !column.isPrimaryKey) {
+            switch (labelOption) {
+            case ColumnLabels::Label:
+                if (isEnumConstraint(column))
+                    names << (column.name + "_label");
+                else
+                    names << column.name;
+                break;
+            case ColumnLabels::Expression:
+                if (isEnumConstraint(column)) {
+                    auto constraint = std::dynamic_pointer_cast<EnumConstraint>(column.constraint);
+                    names << (QString(enumClause(column.name, *constraint)) + QString(" AS %1").arg(column.name + "_label"));
+                } else
+                    names << column.name;
+                break;
+            default:
+                names << column.name;
+            }
+        }
     }
     return names;
 }
@@ -201,6 +224,40 @@ QString TableSchema::toName(const QString placeholder) const {
     QString columnName = placeholder;
     columnName.remove(":");
     return columnName;
+}
+
+/**
+ * @brief Verify that list of column names are valid.
+ *
+ * This does not check for duplicate entries in the list.
+ *
+ * @param columnNames List of column names
+ * @param useLabels True to use labeled enumerated columns
+ * @returns True when list has all valid column names, otherwise false
+ */
+bool TableSchema::isColumnListValid(QStringList &nameList, bool useLabels) const {
+    const QStringList allColumns = columnNames(true, useLabels ? ColumnLabels::Label : ColumnLabels::False);
+
+    for (const auto &columnName : nameList) {
+        if (!allColumns.contains(columnName))
+            return false;
+    }
+    return true;
+}
+
+/**
+ * @brief Verify that list of column name is valid.
+ *
+ * @param name Name of column
+ * @param useLabels True to use labeled enumerated columns
+ * @returns True when name is a valid column name, otherwise false
+ */
+bool TableSchema::isColumnValid(QString &name, bool useLabels) const {
+    const QStringList allColumns = columnNames(true, useLabels ? ColumnLabels::Label : ColumnLabels::False);
+
+    if (!allColumns.contains(name))
+        return false;
+    return true;
 }
 
 /**
@@ -338,10 +395,11 @@ QString TableSchema::insertSql(const QVariantMap &data) const {
  * All columns of a table will be selected, including the primary key.
  * This method assumes that there is a primary key.
  *
+ * @param useLabels True to use labeled enumerated columns
  * @returns QString Sql statement
  */
-QString TableSchema::selectSql() const {
-    QStringList const columns = columnNames(true);
+QString TableSchema::selectSql(bool useLabels) const {
+    QStringList const columns = columnNames(true, useLabels ? ColumnLabels::Expression : ColumnLabels::False);
 
     // Return generated statement
     return QString("SELECT %1 FROM %2 WHERE %3 = %4")
@@ -354,10 +412,11 @@ QString TableSchema::selectSql() const {
  * All columns of a table will be selected, including the primary key.
  *
  * @param filters Filter structure to be applied to select
+ * @param useLabels True to use labeled enumerated columns
  * @returns QString Sql statement
  */
-QString TableSchema::selectSql(const QList<FilterCondition> &filters) const {
-    QStringList const columns = columnNames(true);
+QString TableSchema::selectSql(const QList<FilterCondition> &filters, bool useLabels) const {
+    QStringList const columns = columnNames(true, useLabels ? ColumnLabels::Expression : ColumnLabels::False);
 
     // Return generated statement
     return QString("SELECT %1 FROM %2 %3")
@@ -373,10 +432,11 @@ QString TableSchema::selectSql(const QList<FilterCondition> &filters) const {
  * @param filters Filter structure to be applied to select
  * @param sortColumn Name of column to be used to sort data
  * @param sortOrder Sort direction of returned data
+ * @param useLabels True to use labeled enumerated columns
  * @returns QString Sql statement
  */
-QString TableSchema::selectSql(const QList<FilterCondition> &filters, const QString &sortColumn, const Qt::SortOrder sortOrder) const {
-    QStringList const columns = columnNames(true);
+QString TableSchema::selectSql(const QList<FilterCondition> &filters, const QString &sortColumn, const Qt::SortOrder sortOrder, bool useLabels) const {
+    QStringList const columns = columnNames(true, useLabels ? ColumnLabels::Expression : ColumnLabels::False);
 
     // Return generated statement
     return QString("SELECT %1 FROM %2 %3 ORDER BY %4 %5")
@@ -482,6 +542,27 @@ std::shared_ptr<EnumConstraint> TableSchema::enumConstraint(const QString &colum
 }
 
 /**
+ * @brief Return SQL clause that will convert an enumerated column to a label value
+ *
+ * @param columnName Name of column
+ * @param constraint Enumertated constraint. Contains label values
+ * @returns SQL Case statement
+ */
+QString TableSchema::enumClause(const QString &columnName, const EnumConstraint &constraint) const {
+    QString clause = QString("(CASE %1").arg(columnName);
+
+    QList<int> values = constraint.allowedValues();
+    for (int i = 0; i < values.size(); ++i) {
+        int value = values.at(i);
+        QString label = constraint.labelFor(value);
+        clause += QString(" WHEN %1 THEN %2").arg(QString::number(value), formatValue(label, ColumnType::String));
+        // ...
+    }
+    clause += QString(" ELSE 'Unknown' END)");
+    return clause;
+}
+
+/**
  * @brief Format value for use in a SQL statement
  *
  * @param value Value to be used in statement
@@ -500,6 +581,16 @@ QString TableSchema::formatValue(const QVariant &value, ColumnType type) const {
         return value.toString();
     }
     return "NULL";
+}
+
+/**
+ * @brief Determine if column is an enumerted column
+ *
+ * @param col Column to be checked
+ * @returns True if enumerated column, otherwise false
+ */
+bool TableSchema::isEnumConstraint(const ColumnDefinition &col) const {
+    return std::dynamic_pointer_cast<EnumConstraint>(col.constraint) != nullptr;
 }
 
 /**

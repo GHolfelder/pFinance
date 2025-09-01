@@ -26,6 +26,12 @@ enum class ColumnType {                             // Logical column data types
     Float
 };
 
+enum class ColumnLabels {                           // Column labels option
+    False,                                          // Column labels are not used
+    Label,                                          // Use "_label" for any enumereated columns
+    Expression                                      // Use an expression to retrieve the enumerated label and a "_label"
+};
+
 struct FilterCondition {                            // Filter condition structure
     QString columnName;
     FilterOperator op;
@@ -59,7 +65,7 @@ public:
 
     // Table properties
     int columnCount() const;
-    QStringList columnNames(bool includePrimary = true) const;
+    QStringList columnNames(bool includePrimary = true, ColumnLabels labelOption = ColumnLabels::False) const;
     QStringList columnPlaceholders(bool includePrimary = true) const;
     QStringList columnTitles(bool includePrimary = true) const;
     QStringList columnTypes(bool includePrimary = true) const;
@@ -68,15 +74,19 @@ public:
     QString primaryKey(bool placeholder = false) const;
     QString toName(const QString placeholder) const;
 
+    // Validation methods
+    bool isColumnListValid(QStringList &nameList, bool useLabels=false) const;
+    bool isColumnValid(QString &namebool, bool useLabels=false) const;
+
     // Generate Sql
     QString countSql() const;
     QString createColumnConstraintSql() const;
     QString createTableSql() const;
     QString deleteSql() const;
     QString insertSql(const QVariantMap &data) const;
-    QString selectSql() const;
-    QString selectSql(const QList<FilterCondition> &filters) const;
-    QString selectSql(const QList<FilterCondition> &filters, const QString &sortColumn, const Qt::SortOrder sortOrder) const;
+    QString selectSql(bool useLabels = false) const;
+    QString selectSql(const QList<FilterCondition> &filters, bool useLabels = false) const;
+    QString selectSql(const QList<FilterCondition> &filters, const QString &sortColumn, const Qt::SortOrder sortOrder, bool useLabels = false) const;
     QString updateSql(const QVariantMap &data) const;
     QString updateInsertSql(const QVariantMap &data, const QStringList matchColumns) const;
 
@@ -86,7 +96,9 @@ private:
     std::shared_ptr<EnumConstraint> enumConstraint(const QString &columnName) const;
 
     // Utlity methods
+    QString enumClause(const QString &columnName, const EnumConstraint &constraint) const;
     QString formatValue(const QVariant &value, ColumnType type) const;
+    bool isEnumConstraint(const ColumnDefinition &col) const;
     QString operatorToSql(FilterOperator op) const;
     QString whereClause(const QList<FilterCondition> &conditions) const;
 
