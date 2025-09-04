@@ -82,7 +82,7 @@ Item {
         Connections {
             target: categoryAccess
 
-            function onOperationSuccess (id) {
+            function onOperationSuccess (message, id) {
                 if (isLoading) {
                     isLoading = false
                 } else {
