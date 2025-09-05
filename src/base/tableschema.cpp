@@ -14,6 +14,7 @@ TableSchema::TableSchema(const QString &tableName, QObject *parent) : QObject(pa
 
 /**
  * @brief Add column definition to table schema
+ *
  * @param column Column property values
  */
 void TableSchema::addColumn(const ColumnDefinition &column) {
@@ -21,7 +22,17 @@ void TableSchema::addColumn(const ColumnDefinition &column) {
 }
 
 /**
+ * @brief Add foreign key definition to table schema
+ *
+ * @param fk Foreign key propertgy values
+ */
+void TableSchema::addForeignKey(const ForeignKey &fk) {
+    m_foreignKeys.append(fk);
+}
+
+/**
  * @brief Table name getter
+ *
  * @returns Name of table
  */
 QString TableSchema::tableName() const {
@@ -30,6 +41,7 @@ QString TableSchema::tableName() const {
 
 /**
  * @brief Table structure getter
+ *
  * @returns Table structure
  */
 const QList<ColumnDefinition> &TableSchema::columns() const {
@@ -324,6 +336,49 @@ $$;
 }
 
 /**
+ * @brief Create Sql statements for adding constraints to table
+ *
+ * @returns QString Sql statement
+ */
+QString TableSchema::createForeignKeySql() const {
+    QStringList sql;
+
+    // Process all defined foreign keys
+    for (const auto &fk : m_foreignKeys) {
+        QString constraintName = QString("fk_%1_%2").arg(m_tableName, fk.localColumn);
+        QString onDeleteStr = constraintClause("ON DELETE", fk.onDelete);
+        QString onUpdateStr = constraintClause("ON UPDATE", fk.onUpdate);
+        QString ddl = QString(R"(
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = '%1'
+    ) THEN
+        ALTER TABLE %2
+        ADD CONSTRAINT %1
+        FOREIGN KEY (%3)
+        REFERENCES %4 (%5)
+        %6
+        %7;
+    END IF;
+END
+$$;
+)").arg(constraintName,                         // %1 - Constraint name
+        m_tableName,                            // %2 - Table name
+        fk.localColumn,                         // %3 - Local column foreign key
+        fk.referencedTable,                     // %4 - Parent table name
+        fk.referencedColumn,                    // %5 - Parent primary key
+        onDeleteStr,                            // %6 - Delete constraint
+        onUpdateStr);                           // %7 - Update constraint
+        // Append to prior constraint
+        sql << ddl.trimmed();
+    }
+    // Return all constraints
+    return sql.join("\n\n");
+}
+
+/**
  * @brief Create Sql statement for creating table in database
  *
  * @returns QString Sql statement
@@ -468,7 +523,6 @@ QString TableSchema::updateSql(const QVariantMap &data) const {
         .arg(m_tableName, assignments.join(", "), primaryKey(false), primaryKey(true));
 }
 
-
 /**
  * @brief Create Sql statement for updating an existing row or inserting the row if it can't be found
  *
@@ -523,6 +577,25 @@ QString TableSchema::updateInsertSql(const QVariantMap &data, const QStringList 
             assignments.join(", "),             // %4 - List of columns to be updated
             sourceColumns.join(", "),           // %5 - List of all source columns in the data
             sourcePlaceholders.join(", "));     // %6 - List of all source placeholders in the data
+}
+
+/**
+ * @brief Convert constraint to related SQL syntax
+ *
+ * @param policy Either "ON DELETE" or "ON UPDATE"
+ * @param constraint Foreign key constraint value
+ * @returns Constraint clause
+ */
+QString TableSchema::constraintClause(const QString policy, const ReferentialAction constraint) const {
+    switch (constraint) {
+    case ReferentialAction::NoAction:       return QString("%1 %2").arg(policy, "NO ACTION");
+    case ReferentialAction::Cascade:        return QString("%1 %2").arg(policy, "CASCADE");
+    case ReferentialAction::SetNull:        return QString("%1 %2").arg(policy, "SET NULL");
+    case ReferentialAction::SetDefault:     return QString("%1 %2").arg(policy, "SET DEFAULT");
+    case ReferentialAction::Restrict:       return QString("%1 %2").arg(policy, "RESTRICT");
+        break;
+    }
+    return "";
 }
 
 /**
@@ -633,7 +706,7 @@ QString TableSchema::whereClause(const QList<FilterCondition> &conditions) const
 }
 
 /**
- * @brief Convert operator to rtelated SQL syntax
+ * @brief Convert operator to related SQL syntax
  *
  * @param op Operator value
  * @return String value associated with operator

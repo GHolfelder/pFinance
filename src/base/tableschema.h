@@ -32,13 +32,21 @@ enum class ColumnLabels {                           // Column labels option
     Expression                                      // Use an expression to retrieve the enumerated label and a "_label"
 };
 
+enum class ReferentialAction {                      // Referential integrity policies
+    NoAction,
+    Cascade,
+    SetNull,
+    SetDefault,
+    Restrict
+};
+
 struct FilterCondition {                            // Filter condition structure
     QString columnName;
     FilterOperator op;
     QVariant value;                                 // Optional, depending on op
 };
 
-struct ColumnDefinition {
+struct ColumnDefinition {                           // Column definition structure
     QString name;                                   // Internal name
     QString title;                                  // Display title
     ColumnType type;                                // Logical data type (e.g. ColumnType:STRING, ColumnType:INT)
@@ -51,6 +59,15 @@ struct ColumnDefinition {
     std::shared_ptr<ColumnConstraint> constraint;   // Optional constraint
 };
 
+struct ForeignKey {                                 // Foreign key structure
+    QString localColumn;                            // Column name in table e.g. "vendor_id"
+    QString referencedTable;                        // Related table e.g. "vendors"
+    QString referencedColumn;                       // Related table id e.g. "id"
+    QString alias;                                  // Optional alias for joined table
+    ReferentialAction onDelete = ReferentialAction::NoAction;
+    ReferentialAction onUpdate = ReferentialAction::NoAction;
+};
+
 class TableSchema : public QObject
 {
     Q_OBJECT
@@ -58,6 +75,7 @@ public:
     explicit TableSchema(const QString &tableName, QObject *parent = nullptr);
 
     void addColumn(const ColumnDefinition &column);
+    void addForeignKey(const ForeignKey &fk);
     QString tableName() const;
     const QList<ColumnDefinition> &columns() const;
 
@@ -81,6 +99,7 @@ public:
     // Generate Sql
     QString countSql() const;
     QString createColumnConstraintSql() const;
+    QString createForeignKeySql() const;
     QString createTableSql() const;
     QString deleteSql() const;
     QString insertSql(const QVariantMap &data) const;
@@ -90,12 +109,12 @@ public:
     QString updateSql(const QVariantMap &data) const;
     QString updateInsertSql(const QVariantMap &data, const QStringList matchColumns) const;
 
-
 private:
     // Constraints
     std::shared_ptr<EnumConstraint> enumConstraint(const QString &columnName) const;
 
     // Utlity methods
+    QString constraintClause(const QString policy, const ReferentialAction constraint) const;
     QString enumClause(const QString &columnName, const EnumConstraint &constraint) const;
     QString formatValue(const QVariant &value, ColumnType type) const;
     bool isEnumConstraint(const ColumnDefinition &col) const;
@@ -104,6 +123,7 @@ private:
 
     QString m_tableName;                            // Table name
     QList<ColumnDefinition> m_columns;              // Column properties
+    QList<ForeignKey> m_foreignKeys;                // Foreign keys
 };
 
 #endif // TABLESCHEMA_H
