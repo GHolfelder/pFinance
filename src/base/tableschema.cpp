@@ -1,14 +1,17 @@
 #include <QDate>
+#include <QRegularExpression>
 #include "tableschema.h"
 
 /**
  * @brief Table schema constructor
  *
  * @param tableName Name of table being defined
+ * @param alias Alias for table. Used for qualifying column names.
  * @param parent Reference to parent class.
  */
-TableSchema::TableSchema(const QString &tableName, QObject *parent) : QObject(parent) {
+TableSchema::TableSchema(const QString &tableName, const QString &alias, QObject *parent) : QObject(parent) {
     m_tableName = tableName;
+    m_alias = alias;
     setObjectName(tableName);
 }
 
@@ -33,16 +36,17 @@ void TableSchema::addForeignKey(const ForeignKey &fk) {
 /**
  * @brief Table name getter
  *
+ * @param forSql True to translate name for use in SQL statement
  * @returns Name of table
  */
-QString TableSchema::tableName() const {
-    return m_tableName;
+QString TableSchema::tableName(bool forSql) const {
+    return forSql ? m_tableName.toLower() : m_tableName;
 }
 
 /**
- * @brief Table structure getter
+ * @brief Table columns getter
  *
- * @returns Table structure
+ * @returns Table columns
  */
 const QList<ColumnDefinition> &TableSchema::columns() const {
     return m_columns;
@@ -57,22 +61,28 @@ QVariantMap TableSchema::initialize() {
     QVariantMap result;
 
     for (auto it = m_columns.constBegin(); it != m_columns.constEnd(); ++it) {
-        if (!it->isPrimaryKey) switch (it->type) {
+        if (!it->isPrimaryKey) {
+            const QString alias = QString("%1_%2").arg(m_alias, it->name);
+            switch (it->type) {
             case ColumnType::String:
-                result[it->name] = it->defaultValue.isEmpty() ? "" : it->defaultValue;
+                if (it->sqlType == "UUID")
+                    result[alias] = QVariant();
+                else
+                    result[alias] = it->defaultValue.isEmpty() ? "" : it->defaultValue;
                 break;
             case ColumnType::Int:
-                result[it->name] = it->defaultValue.isEmpty() ? 0 : it->defaultValue.toInt();
+                result[alias] = it->defaultValue.isEmpty() ? 0 : it->defaultValue.toInt();
                 break;
             case ColumnType::Date:
-                result[it->name] = it->defaultValue.isEmpty() ? 0 : it->defaultValue.toInt();
+                result[alias] = it->defaultValue.isEmpty() ? 0 : it->defaultValue.toInt();
                 break;
             case ColumnType::Currency:
-                result[it->name] = it->defaultValue.isEmpty() ? 0.0 : it->defaultValue.toFloat();
+                result[alias] = it->defaultValue.isEmpty() ? 0.0 : it->defaultValue.toFloat();
                 break;
             case ColumnType::Float:
-                result[it->name] = it->defaultValue.isEmpty() ? 0.0 : it->defaultValue.toFloat();
+                result[alias] = it->defaultValue.isEmpty() ? 0.0 : it->defaultValue.toFloat();
                 break;
+            }
         }
     }
     return result;
@@ -88,38 +98,76 @@ int TableSchema::columnCount() const {
 }
 
 /**
- * @brief Column names getter
+ * @brief Column alias getter
  *
- * Use the label option to indicate how columns with constraints are to be handled
- *  * False indicates that no special processing is associated with constraint columns
- *  * Label indicates that "_label" is to be added to the column name of any column with a column constraint
- *  * Expression adds a SQL expression converting the column constraint to a label as well as appending "_label" to the column name
+ * This retrieves the list of columns returning each columns alias. The alias is constructed
+ * as "TableAlias_ColumnName" for each column. If the use labels option is set, and the column
+ * is an enumerated column, the alias will be "TableAlias_ColumnName_label".
  *
  * @param includePrimary When true, primary field is included, otherwise the primary key will not be in the result set.
- * @param labelOption Indicates how columns with constraints are to be handled
- * @returns QString list of column names
+ * @param useLabels When true, enumerated column alias will include the "_label" .
+ * @returns QString list of column alias names
  */
-QStringList TableSchema::columnNames(bool includePrimary, ColumnLabels labelOption) const {
+QStringList TableSchema::columnAliases(bool includePrimary, bool useLabels) const {
     QStringList names;
     for (const ColumnDefinition &column : m_columns) {
         if (includePrimary || !column.isPrimaryKey) {
-            switch (labelOption) {
-            case ColumnLabels::Label:
-                if (isEnumConstraint(column))
-                    names << (column.name + "_label");
-                else
-                    names << column.name;
-                break;
-            case ColumnLabels::Expression:
-                if (isEnumConstraint(column)) {
-                    auto constraint = std::dynamic_pointer_cast<EnumConstraint>(column.constraint);
-                    names << (QString(enumClause(column.name, *constraint)) + QString(" AS %1").arg(column.name + "_label"));
-                } else
-                    names << column.name;
-                break;
-            default:
-                names << column.name;
-            }
+            if (useLabels && isEnumConstraint(column))
+                names << QString("%1_%2_label").arg(m_alias, column.name);
+            else
+                names << QString("%1_%2").arg(m_alias, column.name);
+        }
+    }
+    return names;
+}
+
+/**
+ * @brief Column field expressions getter
+ *
+ * This retrieves the list of columns returning each columns select expression. The expression is
+ * constructed as "TableAlias.ColumnName AS TableAlias_ColumnName" for each column. If the use labels
+ * option is set, and the column is an enumerated column, the column expression will be a CASE statement
+ * that returns the label of the enumerated value with the AS clause as the name of the column.
+ *
+ * @param includePrimary When true, primary field is included, otherwise the primary key will not be in the result set.
+ * @param useLabels When true, enumerated column expressions will return a label based on the enumerated value.
+ * @returns QString list of column expressions and their aliases
+ */
+QStringList TableSchema::columnFields(bool includePrimary, bool useLabels) const {
+    QStringList names;
+    for (const ColumnDefinition &column : m_columns) {
+        if (includePrimary || !column.isPrimaryKey) {
+            if (useLabels && isEnumConstraint(column)) {
+                auto constraint = std::dynamic_pointer_cast<EnumConstraint>(column.constraint);
+                names << QString("%1 AS %2_%3_label").arg(enumClause(column.name, *constraint), m_alias, column.name);
+            } else
+                names << QString("%1.%2 AS %1_%2").arg(m_alias, column.name);
+        }
+    }
+    return names;
+}
+
+/**
+ * @brief Column names getter
+ *
+ * This retrieves the list of columns returning each columns select expression. The expression is
+ * constructed as "TableAlias.ColumnName" for each column. If the use labels option is set, and the
+ * column is an enumerated column, the column expression will be a CASE statement
+ * that returns the label of the enumerated value.
+ *
+ * @param includePrimary When true, primary field is included, otherwise the primary key will not be in the result set.
+ * @param useLabels When true, enumerated column expressions will return a label based on the enumerated value.
+ * @returns QString list of column expressions
+ */
+QStringList TableSchema::columnNames(bool includePrimary, bool useLabels) const {
+    QStringList names;
+    for (const ColumnDefinition &column : m_columns) {
+        if (includePrimary || !column.isPrimaryKey) {
+            if (useLabels && isEnumConstraint(column)) {
+                auto constraint = std::dynamic_pointer_cast<EnumConstraint>(column.constraint);
+                names << enumClause(column.name, *constraint);
+            } else
+                names << QString("%1.%2").arg(m_alias, column.name);
         }
     }
     return names;
@@ -129,8 +177,8 @@ QStringList TableSchema::columnNames(bool includePrimary, ColumnLabels labelOpti
  * @brief Column placeholder getter
  *
  * Placeholders are used to represent dynamic values that will be substituted when the SQL
- * statement is executed. The format of the generated placeholder is ":column-name" where
- * the column-name is the column name from the schema.
+ * statement is executed. The format of the generated placeholder is ":TableAlias_ColumnName"
+ * where the ColumnName is the column name from the schema.
  *
  * @param includePrimary When true, primary field is included, otherwise the primary key will not be in the result set.
  * @returns QString list of column placeholders
@@ -139,7 +187,7 @@ QStringList TableSchema::columnPlaceholders(bool includePrimary) const {
     QStringList placeholders;
     for (const ColumnDefinition &column : m_columns) {
         if (includePrimary || !column.isPrimaryKey)
-            placeholders << ":" + column.name;
+            placeholders << QString(":%1_%2").arg(m_alias, column.name);
     }
     return placeholders;
 }
@@ -185,29 +233,29 @@ QStringList TableSchema::columnTypes(bool includePrimary) const {
  * This method returns a QVariantMap of enumerated integer values and their corresponding label.
  * This in turn can be used for validating values entered by the users.
  *
- * @param columnName Name of column whose values are to be retrieved
+ * @param alias Column alias whose values are to be retrieved
  * @returns QVariant map of values and labels or an empty list
  */
-QVariantMap TableSchema::columnValues(const QString &columnName) const {
+QVariantMap TableSchema::columnValues(const QString &alias) const {
     QVariantMap emptyList;
-    std::shared_ptr<EnumConstraint> values = enumConstraint(columnName);
+    std::shared_ptr<EnumConstraint> values = enumConstraint(toName(alias));
     if (values)
         return values->values();
     return emptyList;
 }
 
 /**
- * @brief Get default sort columns
+ * @brief Get default sort column
  *
- * The first field tyhat is not a primary key will always be
+ * The first field that is not a primary key will always be
  * the default sort column.
  *
- * @returns QString name of column to be sorted by default
+ * @returns QString alias name of column to be sorted by default
  */
 QString TableSchema::defaultSort() const {
     for (const ColumnDefinition &column : m_columns) {
         if (!column.isPrimaryKey)
-            return column.name;
+            return QString("%1_%2").arg(m_alias, column.name);
     }
     return "";
 }
@@ -216,56 +264,79 @@ QString TableSchema::defaultSort() const {
  * @brief Retrieve primary key for table
  *
  * @param placeholder When true, the placeholder name is returned, otherwise the column name
- * @returns Name of primary key field or blank if there is none
+ * @returns Alias for primary key field or blank if there is none
  */
 QString TableSchema::primaryKey(bool placeholder) const {
     for (const ColumnDefinition &column : m_columns) {
         if (column.isPrimaryKey)
-            return (placeholder ? ":" : "") + column.name;
+            return QString(placeholder ? ":%1_%2" : "%1_%2").arg(m_alias, column.name);
     }
     return "";
 }
 
 /**
- * @brief Convert placeholder name to column name
+ * @brief Convert placeholder name to column alias
  *
  * @param placeholder Placeholder name
- * @returns column name
+ * @returns column alias
  */
-QString TableSchema::toName(const QString placeholder) const {
-    QString columnName = placeholder;
-    columnName.remove(":");
-    return columnName;
+QString TableSchema::toAlias(const QString placeholder) const {
+    QString alias = placeholder;
+    return alias.remove(":");
 }
 
 /**
- * @brief Verify that list of column names are valid.
+ * @brief Convert column alias to column field expression
+ *
+ * @param alias Alias name
+ * @returns column field expression
+ */
+QString TableSchema::toField(const QString alias) const {
+    const int size = m_alias.size() + 1;
+    QString field = alias.left(size) == m_alias + "_" ? alias.mid(size) : alias;
+    return QString("%1.%2").arg(m_alias, field);
+}
+
+/**
+ * @brief Get column name from alias
+ *
+ * @param alias Alias name
+ * @returns column name
+ */
+QString TableSchema::toName(const QString alias) const {
+    const int size = m_alias.size() + 1;
+    QString field = alias.left(size) == m_alias + "_" ? alias.mid(size) : alias;
+    return field;
+}
+
+/**
+ * @brief Verify that list of column aliases are valid.
  *
  * This does not check for duplicate entries in the list.
  *
- * @param columnNames List of column names
+ * @param nameList List of column aliases
  * @param useLabels True to use labeled enumerated columns
- * @returns True when list has all valid column names, otherwise false
+ * @returns True when list has all valid column aliases, otherwise false
  */
-bool TableSchema::isColumnListValid(QStringList &nameList, bool useLabels) const {
-    const QStringList allColumns = columnNames(true, useLabels ? ColumnLabels::Label : ColumnLabels::False);
+bool TableSchema::isAliasListValid(QStringList &nameList, bool useLabels) const {
+    const QStringList allColumns = columnAliases(true, useLabels);
 
-    for (const auto &columnName : nameList) {
-        if (!allColumns.contains(columnName))
+    for (const auto &alias : nameList) {
+        if (!allColumns.contains(alias))
             return false;
     }
     return true;
 }
 
 /**
- * @brief Verify that list of column name is valid.
+ * @brief Verify that column alias is valid.
  *
- * @param name Name of column
+ * @param name Alias for column
  * @param useLabels True to use labeled enumerated columns
  * @returns True when name is a valid column name, otherwise false
  */
-bool TableSchema::isColumnValid(QString &name, bool useLabels) const {
-    const QStringList allColumns = columnNames(true, useLabels ? ColumnLabels::Label : ColumnLabels::False);
+bool TableSchema::isAliasValid(QString &name, bool useLabels) const {
+    const QStringList allColumns = columnAliases(true, useLabels);
 
     if (!allColumns.contains(name))
         return false;
@@ -278,7 +349,10 @@ bool TableSchema::isColumnValid(QString &name, bool useLabels) const {
  * @returns QString Sql statement
  */
 QString TableSchema::countSql() const {
-    return "SELECT COUNT(*) FROM " + m_tableName;
+    return QString(R"(
+SELECT COUNT(*)
+    FROM %1
+)").arg(tableName(true));
 }
 
 /**
@@ -307,7 +381,7 @@ QString TableSchema::createColumnConstraintSql() const {
             continue;
 
         // Create arguments for generated SQL
-        QString constraintName = QString("chk_%1_%2").arg(m_tableName, col.name);
+        QString constraintName = QString("chk_%1_%2").arg(tableName(true), col.name);
         QStringList stringified;
         for (int val : allowed)
             stringified << QString::number(val);
@@ -326,10 +400,11 @@ BEGIN
     END IF;
 END
 $$;
-)").arg(constraintName,
-    m_tableName,
-    col.name,
-    allowedList);
+)").arg(constraintName,                         // %1 = Generated constraint name chk_TableName_ColumnName
+    tableName(true),                            // %2 = Table name
+    col.name,                                   // %3 = Name of column
+    allowedList);                               // %4 = List of allowable values
+
     statements << ddl.trimmed();
     }
     return statements.join("\n\n");
@@ -345,7 +420,7 @@ QString TableSchema::createForeignKeySql() const {
 
     // Process all defined foreign keys
     for (const auto &fk : m_foreignKeys) {
-        QString constraintName = QString("fk_%1_%2").arg(m_tableName, fk.localColumn);
+        QString constraintName = QString("fk_%1_%2").arg(tableName(true), fk.localColumn);
         QString onDeleteStr = constraintClause("ON DELETE", fk.onDelete);
         QString onUpdateStr = constraintClause("ON UPDATE", fk.onUpdate);
         QString ddl = QString(R"(
@@ -365,7 +440,7 @@ BEGIN
 END
 $$;
 )").arg(constraintName,                         // %1 - Constraint name
-        m_tableName,                            // %2 - Table name
+        tableName(true),                        // %2 - Table name
         fk.localColumn,                         // %3 - Local column foreign key
         fk.referencedTable,                     // %4 - Parent table name
         fk.referencedColumn,                    // %5 - Parent primary key
@@ -401,9 +476,11 @@ QString TableSchema::createTableSql() const {
         columnDefs << def;
     }
 
-    QString sql = QString("CREATE TABLE IF NOT EXISTS %1 (%2);")
-        .arg(m_tableName, columnDefs.join(", "));
-    return sql;
+    return QString(R"(
+CREATE TABLE
+    IF NOT EXISTS %1 (%2);
+)").arg(tableName(true),                        // %1 = Name of table
+    columnDefs.join(", "));                     // %2 = List of column definitions
 }
 
 /**
@@ -414,8 +491,12 @@ QString TableSchema::createTableSql() const {
  * @returns QString Sql statement
  */
 QString TableSchema::deleteSql() const {
-    return QString("DELETE FROM %1 WHERE %2 = %3")
-        .arg(m_tableName, primaryKey(false), primaryKey(true));
+    return QString(R"(
+DELETE FROM %1
+    WHERE %2 = %3
+)").arg(tableName(true),                        // %1 = Name of table
+    toName(primaryKey(false)),                  // %2 = Primary key name
+    primaryKey(true));                          // %3 = Primary key placeholder
 }
 
 /**
@@ -433,15 +514,23 @@ QString TableSchema::insertSql(const QVariantMap &data) const {
     // Add primary key and any field in the variant map to column and placeholder list
     for (auto it = m_columns.constBegin(); it != m_columns.constEnd(); ++it) {
         const QString name = it->name;
-        if (it->isPrimaryKey || data.contains(name)) {
+        QString alias = QString("%1_%2").arg(m_alias, name);
+        if (it->isPrimaryKey || data.contains(alias)) {
             columns << name;
-            placeholders << ":" + name;
+            placeholders << ":" + alias;
         }
     }
 
     // Return generated insert
-    return QString("INSERT INTO %1 (%2) VALUES (%3)")
-        .arg(m_tableName, columns.join(", "), placeholders.join(", "));
+    return QString(R"(
+INSERT INTO %1 AS %2
+    (%3)
+VALUES
+    (%4)
+)").arg(tableName(true),                        // %1 = Name of table
+    m_alias,                                    // %2 = Alias
+    columns.join(", "),                         // %3 = List of column to be added to table
+    placeholders.join(", "));                   // %4 = List of placeholder names
 }
 
 /**
@@ -454,11 +543,21 @@ QString TableSchema::insertSql(const QVariantMap &data) const {
  * @returns QString Sql statement
  */
 QString TableSchema::selectSql(bool useLabels) const {
-    QStringList const columns = columnNames(true, useLabels ? ColumnLabels::Expression : ColumnLabels::False);
+    QStringList const columns = columnFields(true, useLabels);
 
     // Return generated statement
-    return QString("SELECT %1 FROM %2 WHERE %3 = %4")
-        .arg(columns.join(", "), m_tableName, primaryKey(false), primaryKey(true));
+    return QString(R"(
+SELECT
+    %1
+FROM %2 AS %3
+WHERE
+    %4 = %5
+)").arg(
+    columns.join(", "),                         // %1 = Column expressions
+    tableName(true),                            // %2 = Table name
+    m_alias,                                    // %3 = Alias
+    toField(primaryKey(false)),                 // %4 = Primary key
+    primaryKey(true));                          // %5 = Primary key placeholder
 }
 
 /**
@@ -471,11 +570,18 @@ QString TableSchema::selectSql(bool useLabels) const {
  * @returns QString Sql statement
  */
 QString TableSchema::selectSql(const QList<FilterCondition> &filters, bool useLabels) const {
-    QStringList const columns = columnNames(true, useLabels ? ColumnLabels::Expression : ColumnLabels::False);
+    QStringList const columns = columnFields(true, useLabels);
 
     // Return generated statement
-    return QString("SELECT %1 FROM %2 %3")
-        .arg(columns.join(", "), m_tableName, whereClause(filters));
+    return QString(R"(
+SELECT
+    %1
+FROM %2 AS %3
+%4
+)").arg(columns.join(", "),                     // %1 = Column expressions
+    tableName(true),                            // %2 = Table name
+    m_alias,                                    // %3 = Alias
+    whereClause(filters));                      // %4 = Where clause
 }
 
 /**
@@ -491,11 +597,21 @@ QString TableSchema::selectSql(const QList<FilterCondition> &filters, bool useLa
  * @returns QString Sql statement
  */
 QString TableSchema::selectSql(const QList<FilterCondition> &filters, const QString &sortColumn, const Qt::SortOrder sortOrder, bool useLabels) const {
-    QStringList const columns = columnNames(true, useLabels ? ColumnLabels::Expression : ColumnLabels::False);
+    QStringList const columns = columnFields(true, useLabels);
 
     // Return generated statement
-    return QString("SELECT %1 FROM %2 %3 ORDER BY %4 %5")
-        .arg(columns.join(", "), m_tableName, whereClause(filters), sortColumn, sortOrder == Qt::AscendingOrder ? "ASC" : "DESC");
+    return QString(R"(
+SELECT
+    %1
+FROM %2 AS %3
+%4
+ORDER BY %5 %6
+)").arg(columns.join(", "),                     // %1 = Column expressions
+    tableName(true),                            // %2 = Table name
+    m_alias,                                    // %3 = Alias
+    whereClause(filters),                       // %4 = Where clause
+    toField(sortColumn),                        // %5, %6 = Sort column and direction
+    sortOrder == Qt::AscendingOrder ? "ASC" : "DESC");
 }
 
 /**
@@ -513,14 +629,23 @@ QString TableSchema::updateSql(const QVariantMap &data) const {
 
     // Build assignments
     for (const ColumnDefinition &column : m_columns) {
-        QString assign = QString("%1 = %2").arg(column.name, ":" + column.name);
-        if (!column.isPrimaryKey && data.contains(column.name))
+        const QString alias = QString("%1_%2").arg(m_alias, column.name);
+        if (!column.isPrimaryKey && data.contains(alias)) {
+            QString assign = QString("%1 = :%3").arg(column.name, alias);
             assignments << assign;
+        }
     }
 
     // Return generated statement
-    return QString("UPDATE %1 SET %2 WHERE %3 = %4")
-        .arg(m_tableName, assignments.join(", "), primaryKey(false), primaryKey(true));
+    return QString(R"(
+UPDATE %1
+SET
+    %2
+WHERE %3 = %4
+)").arg(tableName(true),                        // %1 = Table name
+    assignments.join(", "),                     // %2 = Assignments
+    toName(primaryKey(false)),                  // %3 = Primary key
+    primaryKey(true));                          // %4 = Primary key placeholder
 }
 
 /**
@@ -546,37 +671,39 @@ QString TableSchema::updateInsertSql(const QVariantMap &data, const QStringList 
 
     // Build list of source columns, placeholders and assignments
     for (const ColumnDefinition &column : m_columns) {
+        const QString alias = QString("%1_%2").arg(m_alias, column.name);
         // If valid column
-        if (data.contains(column.name)) {
+        if (data.contains(alias)) {
             sourceColumns << column.name;
-            sourcePlaceholders << (":" + column.name);
+            sourcePlaceholders << (":" + alias);
             // If the column is one that we are matching on
-            if (matchColumns.contains(column.name)) {
-                QString match = QString("%1 = %2").arg(column.name, ":" + column.name);
+            if (matchColumns.contains(alias)) {
+                QString match = QString("%1 = %2").arg(column.name, ":" + alias);
                 matches << match;
             // else it'll be a column we update
             } else if (!column.isPrimaryKey) {
-                QString assign = QString("%1 = %2").arg(column.name, ":" + column.name);
+                QString assign = QString("%1 = %2").arg(column.name, ":" + alias);
                 assignments << assign;
             }
         }
     }
 
     // Return generated statement
-    return QString("MERGE INTO %1 AS target"
-        " USING (SELECT %2) AS source"
-        " ON %3"
-        " WHEN MATCHED THEN"
-        " UPDATE SET %4"
-        " WHEN NOT MATCHED THEN"
-        " INSERT (%5)"
-        " VALUES (%6)")
-        .arg(m_tableName,                       // %1 - Name of table
-            sourcePlaceholders.join(", "),      // %2 - List of all source placeholders in the data
-            matches.join(" AND "),              // %3 - List of columns to match on
-            assignments.join(", "),             // %4 - List of columns to be updated
-            sourceColumns.join(", "),           // %5 - List of all source columns in the data
-            sourcePlaceholders.join(", "));     // %6 - List of all source placeholders in the data
+    return QString(R"(
+MERGE INTO %1 AS target
+USING (SELECT %2) AS source
+ON %3
+WHEN MATCHED THEN
+UPDATE SET %4
+WHEN NOT MATCHED THEN
+INSERT (%5)
+VALUES (%6)
+)").arg(tableName(true),                        // %1 = Name of table
+    sourcePlaceholders.join(", "),              // %2 = List of all source placeholders in the data
+    matches.join(" AND "),                      // %3 = List of columns to match on
+    assignments.join(", "),                     // %4 = List of columns to be updated
+    sourceColumns.join(", "),                   // %5 = List of all source columns in the data
+    sourcePlaceholders.join(", "));             // %6 = List of all source placeholders in the data
 }
 
 /**
@@ -622,7 +749,7 @@ std::shared_ptr<EnumConstraint> TableSchema::enumConstraint(const QString &colum
  * @returns SQL Case statement
  */
 QString TableSchema::enumClause(const QString &columnName, const EnumConstraint &constraint) const {
-    QString clause = QString("(CASE %1").arg(columnName);
+    QString clause = QString("(CASE %1.%2").arg(m_alias, columnName);
 
     QList<int> values = constraint.allowedValues();
     for (int i = 0; i < values.size(); ++i) {
@@ -677,7 +804,7 @@ QString TableSchema::whereClause(const QList<FilterCondition> &conditions) const
 
     for (const auto &cond : conditions) {
         auto it = std::find_if(m_columns.begin(), m_columns.end(),
-            [&](const ColumnDefinition &col) { return col.name == cond.columnName; });
+            [&](const ColumnDefinition &col) { return col.name == toName(cond.columnName); });
 
         if (it == m_columns.end()) {
             qWarning() << "Unknown column:" << cond.columnName;

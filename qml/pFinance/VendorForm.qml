@@ -123,9 +123,9 @@ Item {
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
                 TextField {
-                    text: vendorData.name
+                    text: vendorData.ven_name
                     Layout.preferredWidth: layoutParent.textWidth
-                    onTextChanged: vendorData.name = text
+                    onTextChanged: vendorData.ven_name = text
                     focus: true
                 }
             }
@@ -135,9 +135,9 @@ Item {
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
                 TextField {
-                    text: vendorData.address1
+                    text: vendorData.ven_address1
                     Layout.preferredWidth: layoutParent.textWidth
-                    onTextChanged: vendorData.address1 = text
+                    onTextChanged: vendorData.ven_address1 = text
                 }
             }
             RowLayout {
@@ -146,9 +146,9 @@ Item {
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
                 TextField {
-                    text: vendorData.address2
+                    text: vendorData.ven_address2
                     Layout.preferredWidth: layoutParent.textWidth
-                    onTextChanged: vendorData.address2 = text
+                    onTextChanged: vendorData.ven_address2 = text
                 }
             }
             RowLayout {
@@ -157,21 +157,21 @@ Item {
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
                 TextField {
-                    text: vendorData.city
+                    text: vendorData.ven_city
                     Layout.preferredWidth: (layoutParent.textWidth - 20) / 3
-                    onTextChanged: vendorData.city = text
+                    onTextChanged: vendorData.ven_city = text
                 }
                 TextField {
-                    text: vendorData.state
+                    text: vendorData.ven_state
                     Layout.preferredWidth: (layoutParent.textWidth - 20) / 3
                     Layout.leftMargin: 5
-                    onTextChanged: vendorData.state = text
+                    onTextChanged: vendorData.ven_state = text
                 }
                 TextField {
-                    text: vendorData.postal_code
+                    text: vendorData.ven_postal_code
                     Layout.preferredWidth: (layoutParent.textWidth - 20) / 3
                     Layout.leftMargin: 5
-                    onTextChanged: vendorData.postal_code = text
+                    onTextChanged: vendorData.ven_postal_code = text
                 }
             }
         }

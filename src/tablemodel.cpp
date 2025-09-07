@@ -22,13 +22,13 @@ TableModel::TableModel(QSqlDatabase db, DatabaseTables *tables, QString tableNam
     // Get/set default sort column, sort order, visible columns
     m_sortColumn        = m_state->restoreString("sortColumn", m_table->defaultSort());
     m_sortOrder         = m_state->restoreSortOrder("sortOrder", Qt::AscendingOrder);
-    m_visibleColumns    = m_state->restoreStringList("visibleColumns", m_table->columnNames(false, ColumnLabels::Label));
+    m_visibleColumns    = m_state->restoreStringList("visibleColumns", m_table->columnAliases(false, true));
     // Verify that the properties are still correct in case there's been a database change
-    if (!m_table->isColumnListValid(m_visibleColumns, true)) {
+    if (!m_table->isAliasListValid(m_visibleColumns, true)) {
         qInfo() << (m_table->tableName() + " visible columns were invalid and reset");
-        m_visibleColumns = m_table->columnNames(false, ColumnLabels::Label);
+        m_visibleColumns = m_table->columnAliases(false, true);
     }
-    if (!m_table->isColumnValid(m_sortColumn, true)) {
+    if (!m_table->isAliasValid(m_sortColumn, true)) {
         qInfo() << (m_table->tableName() + " sorted column was invalid and reset");
         m_sortColumn = m_table->defaultSort();
         m_sortOrder = Qt::AscendingOrder;
@@ -57,7 +57,7 @@ QVariant TableModel::data(const QModelIndex &index, int role) const {
     case ColumnRole:
         return index.column();
     case IdRole:
-        return m_data.at(index.row()).at(m_table->columnNames(true, ColumnLabels::Label).indexOf(m_table->primaryKey()));
+        return m_data.at(index.row()).at(m_table->columnAliases(true, true).indexOf(m_table->primaryKey()));
     default:
         break;
     }
@@ -163,7 +163,7 @@ QString TableModel::sortColumn() {
  * @returns List of column names
  */
 QStringList TableModel::columnNames() const {
-    return m_table->columnNames(true, ColumnLabels::Label);
+    return m_table->columnAliases(true, true);
 }
 
 /**
@@ -199,7 +199,7 @@ QStringList TableModel::visibleColumns() const {
  * @param columns List of visible column names
  */
 void TableModel::setVisibleColumns(const QStringList &columns) {
-    const QStringList allColumns = m_table->columnNames(true, ColumnLabels::Label);
+    const QStringList allColumns = m_table->columnAliases(true, true);
     QStringList newColumns;
 
     // Validate and transfer columns to new column list
@@ -226,7 +226,7 @@ void TableModel::setVisibleColumns(const QStringList &columns) {
  * @returns Index to found record or -1 if not found
  */
 int TableModel::sortBy(const QString sortColumn, const QString &id) {
-    const QStringList allColumns = m_table->columnNames(true, ColumnLabels::Label);
+    const QStringList allColumns = m_table->columnAliases(true, true);
 
     // Toggle sort order if same column selected
     if (sortColumn != "" && sortColumn == m_sortColumn)
@@ -257,7 +257,7 @@ int TableModel::sortBy(const QString sortColumn, const QString &id) {
  * @returns Index to found record or -1 if not found
  */
 int TableModel::refresh(const QString &id) {
-    const QStringList allColumns = m_table->columnNames(true, ColumnLabels::Label);
+    const QStringList allColumns = m_table->columnAliases(true, true);
     const QString pKey = m_table->primaryKey();
     QSqlQuery query(m_db);
     int foundIdx = -1;
@@ -307,7 +307,7 @@ int TableModel::refresh(const QString &id) {
 int TableModel::columnToIndex(const int column) const {
     if (column < m_visibleColumns.size()) {
         QString columnName = m_visibleColumns.at(column);
-        return m_table->columnNames(true, ColumnLabels::Label).indexOf(columnName);
+        return m_table->columnAliases(true, true).indexOf(columnName);
     }
     return -1;
 }

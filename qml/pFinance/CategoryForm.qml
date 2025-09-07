@@ -123,9 +123,9 @@ Item {
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
                 TextField {
-                    text: categoryData.name
+                    text: categoryData.cat_name
                     Layout.preferredWidth: layoutParent.textWidth
-                    onTextChanged: categoryData.name = text
+                    onTextChanged: categoryData.cat_name = text
                     focus: true
                 }
             }
@@ -139,9 +139,9 @@ Item {
                     Layout.preferredHeight: 150
 
                     TextArea {
-                        text: categoryData.description
+                        text: categoryData.cat_description
                         wrapMode: TextArea.Wrap
-                        onTextChanged: categoryData.description = text
+                        onTextChanged: categoryData.cat_description = text
                     }
                 }
             }
@@ -151,12 +151,12 @@ Item {
                     Layout.preferredWidth: layoutParent.labelWidth
                 }
                 SchemaComboBox {
-                    columnName: "type"
+                    columnName: "cat_type"
                     accessObject: categoryAccess
-                    selectedValue: categoryData.type
+                    selectedValue: categoryData.cat_type
                     preferredWidth: layoutParent.textWidth
 
-                    onSelectedValueChanged: categoryData.type = selectedValue
+                    onSelectedValueChanged: categoryData.cat_type = selectedValue
                 }
             }
         }

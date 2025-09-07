@@ -26,12 +26,6 @@ enum class ColumnType {                             // Logical column data types
     Float
 };
 
-enum class ColumnLabels {                           // Column labels option
-    False,                                          // Column labels are not used
-    Label,                                          // Use "_label" for any enumereated columns
-    Expression                                      // Use an expression to retrieve the enumerated label and a "_label"
-};
-
 enum class ReferentialAction {                      // Referential integrity policies
     NoAction,
     Cascade,
@@ -72,29 +66,33 @@ class TableSchema : public QObject
 {
     Q_OBJECT
 public:
-    explicit TableSchema(const QString &tableName, QObject *parent = nullptr);
+    explicit TableSchema(const QString &tableName, const QString &alias, QObject *parent = nullptr);
 
     void addColumn(const ColumnDefinition &column);
     void addForeignKey(const ForeignKey &fk);
-    QString tableName() const;
+    QString tableName(bool forSql=false) const;
     const QList<ColumnDefinition> &columns() const;
 
     QVariantMap initialize();
 
     // Table properties
     int columnCount() const;
-    QStringList columnNames(bool includePrimary = true, ColumnLabels labelOption = ColumnLabels::False) const;
+    QStringList columnAliases(bool includePrimary = true, bool useLabels = false) const;
+    QStringList columnFields(bool includePrimary = true, bool useLabels = false) const;
+    QStringList columnNames(bool includePrimary = true, bool useLabels = false) const;
     QStringList columnPlaceholders(bool includePrimary = true) const;
     QStringList columnTitles(bool includePrimary = true) const;
     QStringList columnTypes(bool includePrimary = true) const;
-    QVariantMap columnValues(const QString &columnName) const;
+    QVariantMap columnValues(const QString &alias) const;
     QString defaultSort() const;
     QString primaryKey(bool placeholder = false) const;
-    QString toName(const QString placeholder) const;
+    QString toAlias(const QString placeholder) const;
+    QString toField(const QString alias) const;
+    QString toName(const QString alias) const;
 
     // Validation methods
-    bool isColumnListValid(QStringList &nameList, bool useLabels=false) const;
-    bool isColumnValid(QString &namebool, bool useLabels=false) const;
+    bool isAliasListValid(QStringList &nameList, bool useLabels=false) const;
+    bool isAliasValid(QString &name, bool useLabels=false) const;
 
     // Generate Sql
     QString countSql() const;
@@ -122,6 +120,7 @@ private:
     QString whereClause(const QList<FilterCondition> &conditions) const;
 
     QString m_tableName;                            // Table name
+    QString m_alias;                                // Table alias
     QList<ColumnDefinition> m_columns;              // Column properties
     QList<ForeignKey> m_foreignKeys;                // Foreign keys
 };

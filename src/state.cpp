@@ -103,8 +103,8 @@ QString State::restoreValue(const QString propertyName) {
 
     // Variables needed for getting value from database
     const QString sql = m_table->selectSql({
-        { "object",         FilterOperator::Equals, m_object},
-        { "property_name",  FilterOperator::Equals, propertyName}
+        { "sta_object",         FilterOperator::Equals, m_object},
+        { "sta_property_name",  FilterOperator::Equals, propertyName}
     });
 
     // Retrieve record from database
@@ -115,7 +115,7 @@ QString State::restoreValue(const QString propertyName) {
     } else if (!query.next()) {
         return "";
     }
-    return query.value("property_value").toString();
+    return query.value("sta_property_value").toString();
 }
 
 /**
@@ -128,20 +128,20 @@ QString State::restoreValue(const QString propertyName) {
 bool State::saveValue(const QString propertyName, const QString propertyValue) {
     QSqlQuery query(m_db);
     QVariantMap data;
-    const QStringList matchOn = { "object", "property_name" };
-    const QStringList placeholders = m_table->columnPlaceholders();
+    const QStringList matchOn = { "sta_object", "sta_property_name" };
+    const QStringList placeholders = m_table->columnPlaceholders(true);
 
     // Prepare values to be updated / inserted
-    data["id"]              = QUuid::createUuid();
-    data["object"]          = m_object;
-    data["property_name"]   = propertyName;
-    data["property_value"]  = propertyValue;
+    data["sta_id"]              = QUuid::createUuid();
+    data["sta_object"]          = m_object;
+    data["sta_property_name"]   = propertyName;
+    data["sta_property_value"]  = propertyValue;
 
     // Prepare query to do update / insert
     const QString sql = m_table->updateInsertSql(data, matchOn);
     query.prepare(sql);
     for (const QString& placeholder : placeholders) {
-        const QString column = m_table->toName(placeholder);
+        const QString column = m_table->toAlias(placeholder);
         if (data.contains(column))
             query.bindValue(placeholder, data[column]);
     }

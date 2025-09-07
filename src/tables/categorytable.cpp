@@ -6,7 +6,7 @@
  * @param tableName Name of table for schema
  * @param parent Reference to parent class.
  */
-CategoryTable::CategoryTable(QObject *parent) : TableSchema ("Categories", parent) {
+CategoryTable::CategoryTable(QObject *parent) : TableSchema ("Categories", "cat", parent) {
     TypeConstraint.valueMap = {
         { 0, tr("Income") },
         { 1, tr("Expense") }

@@ -57,7 +57,7 @@ bool TableAccess::add(const QVariantMap &data) {
 
     // Bind column values.
     for (const QString &placeholder : placeholders) {
-        const QString name = m_table->toName(placeholder);
+        const QString name = m_table->toAlias(placeholder);
         if (placeholder == pKey)
             query.bindValue(placeholder, guid);
         else if (data.contains(name))
@@ -101,7 +101,7 @@ QVariantMap TableAccess::get(const QString &id) {
     // Variables needed for getting value from database
     QString const sql = m_table->selectSql();
     QString const pKey = m_table->primaryKey();
-    QStringList const columns = m_table->columnNames();
+    QStringList const columns = m_table->columnAliases(true, false);
     QSqlQuery query(m_db);
     QVariantMap result;
 
@@ -136,13 +136,13 @@ QVariantMap TableAccess::get(const QString &id) {
 bool TableAccess::update(const QString &id, const QVariantMap &data) {
     QString const sql = m_table->updateSql(data);
     QString const pKey = m_table->primaryKey(true);
-    QStringList const placeholders = m_table->columnPlaceholders();
+    QStringList const placeholders = m_table->columnPlaceholders(true);
     QSqlQuery query(m_db);
 
     // Prepare query to do update
     query.prepare(sql);
     for (const QString& placeholder : placeholders) {
-        const QString column = m_table->toName(placeholder);
+        const QString column = m_table->toAlias(placeholder);
 
         if (placeholder == pKey)
             query.bindValue(placeholder, id);

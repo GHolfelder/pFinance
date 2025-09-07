@@ -6,7 +6,7 @@
  * @param tableName Name of table for schema
  * @param parent Reference to parent class.
  */
-StateTable::StateTable(QObject *parent) : TableSchema ("States", parent) {
+StateTable::StateTable(QObject *parent) : TableSchema ("States", "sta", parent) {
     //         column,              title,                  data type,              sql type,           PKey,   Incr    Null,   default
     addColumn({"id",                tr("id"),               ColumnType::String,     "UUID",             true,   false,  false,  "gen_random_uuid()"});
     addColumn({"object",            tr("Object"),           ColumnType::String,     "TEXT",             false,  false,  false,  ""});
