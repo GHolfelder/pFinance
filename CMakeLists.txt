@@ -14,7 +14,13 @@ find_package(Qt6 REQUIRED COMPONENTS
     QuickControls2
     Sql
 )
-find_package(Qt6 REQUIRED COMPONENTS Core)
+
+# Get the Qt plugins directory
+get_target_property(QT_PLUGINS_DIR Qt6::Core QT_PLUGIN_DIR)
+if(NOT QT_PLUGINS_DIR)
+    # Fallback: set manually or from environment
+    set(QT_PLUGINS_DIR "$ENV{QT6_INSTALL_PLUGINS_DIR}")
+endif()
 
 qt_standard_project_setup()
 
@@ -52,8 +58,6 @@ qt_add_executable(${PROJECT_NAME}
     ${HEADERS}
 )
 
-
-target_link_libraries(pFinance PRIVATE Qt6::Core)
 # ✅ Link Qt modules
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Core
@@ -85,3 +89,50 @@ foreach(file IN LISTS QML_FILES)
     file(RELATIVE_PATH relPath "${QML_DIR}" "${file}")
     configure_file(${file} "${CMAKE_BINARY_DIR}/qml/pFinance/${relPath}" COPYONLY)
 endforeach()
+
+# ✅ Installation and deployment rules
+include(GNUInstallDirs)
+
+install(TARGETS pFinance
+    BUNDLE  DESTINATION .
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+qt_generate_deploy_app_script(
+    TARGET pFinance
+    OUTPUT_SCRIPT deploy_script
+    NO_UNSUPPORTED_PLATFORM_ERROR
+)
+install(SCRIPT ${deploy_script})
+
+# ✅ Copy Qt SQL drivers to build output (fixes missing SQL drivers)
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/sqldrivers"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${QT_PLUGINS_DIR}/sqldrivers"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/sqldrivers"
+)
+
+# Copy PostgreSQL client DLLs (adjust the path as needed)
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "C:/bin/PostgreSQL/17/bin/libpq.dll"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/libpq.dll"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "C:/bin/PostgreSQL/17/bin/libiconv-2.dll"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/libiconv-2.dll"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "C:/bin/PostgreSQL/17/bin/libintl-9.dll"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/libintl-9.dll"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "C:/bin/PostgreSQL/17/bin/libssl-3-x64.dll"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/libssl-3-x64.dll"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "C:/bin/PostgreSQL/17/bin/libcrypto-3-x64.dll"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/libcrypto-3-x64.dll"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "C:/bin/PostgreSQL/17/bin/libwinpthread-1.dll"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/libwinpthread-1.dll"
+)

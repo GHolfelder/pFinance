@@ -1,0 +1,4 @@
+{
+  "cmake.generator": "Ninja",
+  "cmake.cmakePath": "/bin/Qt/Tools/CMake_64/bin/cmake.exe"
+}

@@ -4,6 +4,7 @@
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QDebug>
+#include <QCoreApplication>
 
 /**
  * @brief Constructor
@@ -23,7 +24,8 @@ DatabaseManager::DatabaseManager(QObject *parent) : QObject(parent) {
  * @return True if successful, otherwise false
  */
 bool DatabaseManager::connect() {
-    QSettings settings("config.ini", QSettings::IniFormat);
+    QString iniPath = QCoreApplication::applicationDirPath() + "/config.ini";
+    QSettings settings(iniPath, QSettings::IniFormat);
 
     // Retrieve settings
     settings.beginGroup("Database");
@@ -36,6 +38,8 @@ bool DatabaseManager::connect() {
 
     settings.endGroup();
 
+    qInfo() << "Reading config from:" << iniPath;
+    qInfo() << "Connecting to database" << dbname << "on" << host << ":" << port << "as" << username;
     // Add a new database connection
     m_db = QSqlDatabase::addDatabase("QPSQL");
     m_db.setHostName(host);
